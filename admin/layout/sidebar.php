@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add/Edit Category - Cycle Selling Admin</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        /* Custom monochrome styling */
+        :root {
+            --sidebar-width: 250px;
+            --navbar-height: 60px;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: #212529;
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 12px 20px;
+            border-radius: 0;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #495057;
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        /* Main content area */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding-top: var(--navbar-height);
+            min-height: 100vh;
+        }
+
+        /* Top navbar */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--navbar-height);
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+            z-index: 999;
+        }
+
+        /* Form styling */
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-control:focus {
+            border-color: #6c757d;
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .top-navbar {
+                left: 0;
+            }
+        }
+
+        .category-level-0 {
+            padding-left: 0;
+        }
+
+        .category-level-1 {
+            padding-left: 20px;
+        }
+
+        .category-level-2 {
+            padding-left: 40px;
+        }
+
+        .category-level-3 {
+            padding-left: 60px;
+        }
+
+        .category-level-4 {
+            padding-left: 80px;
+        }
+
+        .category-tree-icon {
+            color: #6c757d;
+            margin-right: 8px;
+        }
+
+        .subcategory-count {
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+
+        .btn-action {
+            margin-right: 5px;
+        }
+
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .category-image {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .bulk-actions {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="p-3">
+            <h4 class="text-white mb-4">
+                <i class="bi bi-bicycle"></i> Cycle Admin
+            </h4>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="dashboard.html">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="categories.html">
+                    <i class="bi bi-tags"></i> Categories
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="products.html">
+                    <i class="bi bi-box-seam"></i> Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#orders">
+                    <i class="bi bi-cart-check"></i> Orders
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#customers">
+                    <i class="bi bi-people"></i> Customers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#settings">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+            </li>
+        </ul>
+    </nav>

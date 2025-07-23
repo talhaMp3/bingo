@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- head -->
+
+<!-- Mirrored from bicycle-store-html.vercel.app/checkout.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 15 Jul 2025 10:30:52 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description"
+        content="CycleCity offers a wide range of bicycles, gear, and accessories for every type of cyclist. Explore our collection and gear up for your next adventure!">
+    <meta name="keywords"
+        content="bicycles, bikes, cycling gear, bike accessories, mountain bikes, road bikes, CycleCity">
+    <meta name="author" content="CycleCity Team">
+
+    <meta property="og:title" content="CycleCity | Quality Bicycles and Cycling Gear">
+    <meta property="og:description"
+        content="Discover the best selection of bicycles, gear, and accessories at CycleCity. Shop now for top brands and quality service.">
+    <meta property="og:image" content="assets/images/logo.png">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CycleCity | Quality Bicycles and Cycling Gear">
+    <meta name="twitter:description"
+        content="Explore the latest in bicycles, cycling gear, and accessories at CycleCity. Gear up for your next adventure!">
+    <meta name="twitter:image" content="assets/images/logo.png">
+    <meta name="twitter:site" content="@CycleCity">
+
+    <title>CycleCity | Your Hub for Quality Bicycles, Gear, and Accessories</title>
+    <link rel="shortcut icon" href="assets/images/favicon.png" type="image/x-icon">
+
+<script defer src="assets/js/main.js"></script><link href="assets/css/style.css" rel="stylesheet"></head>
+
+<body>
+    <!-- preloader -->
+    <!-- preloader  -->
+<div class="preloader">
+    <svg class="loader" viewBox="0 0 48 30" width="48px" height="30px">
+        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">
+            <g transform="translate(9.5,19)">
+                <circle class="loader_tire" r="9" stroke-dasharray="56.549 56.549"></circle>
+                <g class="loader_spokes-spin" stroke-dasharray="31.416 31.416" stroke-dashoffset="-23.562">
+                    <circle class="loader_spokes" r="5"></circle>
+                    <circle class="loader_spokes" r="5" transform="rotate(180,0,0)"></circle>
+                </g>
+            </g>
+            <g transform="translate(24,19)">
+                <g class="loader_pedals-spin" stroke-dasharray="25.133 25.133" stroke-dashoffset="-21.991"
+                    transform="rotate(67.5,0,0)">
+                    <circle class="loader_pedals" r="4"></circle>
+                    <circle class="loader_pedals" r="4" transform="rotate(180,0,0)"></circle>
+                </g>
+            </g>
+            <g transform="translate(38.5,19)">
+                <circle class="loader_tire" r="9" stroke-dasharray="56.549 56.549"></circle>
+                <g class="loader_spokes-spin" stroke-dasharray="31.416 31.416" stroke-dashoffset="-23.562">
+                    <circle class="loader_spokes" r="5"></circle>
+                    <circle class="loader_spokes" r="5" transform="rotate(180,0,0)"></circle>
+                </g>
+            </g>
+            <polyline class="loader_seat" points="14 3,18 3" stroke-dasharray="5 5"></polyline>
+            <polyline class="loader_body" points="16 3,24 19,9.5 19,18 8,34 7,24 19" stroke-dasharray="79 79">
+            </polyline>
+            <path class="loader_handlebars" d="m30,2h6s1,0,1,1-1,1-1,1" stroke-dasharray="10 10"></path>
+            <polyline class="loader_front" points="32.5 2,38.5 19" stroke-dasharray="19 19"></polyline>
+        </g>
+    </svg>
+</div>
+    <!-- back to top -->
+    <button class="back-to-top position-fixed end-0 bottom-0 d-center me-5">
+    <span class="text-h4">
+        <i class="ph ph-arrow-up"></i>
+    </span>
+</button>
+    <!-- header section start -->
+    <header class="header-section position-fixed top-0 start-50 translate-middle-x border-bottom border-n100-1 bg-n0"
+        data-lenis-prevent>
+        <!-- header section start -->
+        <div class="container-fluid">
+            <div class="row g-0 justify-content-center">
+                <div class="col-3xl-11 px-3xl-0 px-xxl-8 px-sm-6 px-0">
+                    <!-- navbar area -->
+                    <div
+                        class="d-flex align-items-center justify-content-between gap-4xl-10 gap-3xl-8 gap-xxl-6 gap-4 px-lg-0 px-sm-4 py-lg-5 py-3">
+                        <div class="logo">
+                            <a href="index.html">
+                                <img class="w-100 d-block d-sm-none" src="assets/images/favicon.png" alt="logo">
+                                <img class="w-100 d-none d-sm-block" src="assets/images/logo.png" alt="logo">
+                            </a>
+                        </div>
+
+                        <!-- cart btn -->
+                        <a href="cart.html" class="icon-36px position-relative text-n100 hover-text-secondary2">
+                            <span class="text-2xl">
+                                <i class="ph ph-shopping-cart"></i>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- header section end -->
+    <!-- include newsletter popup -->
+    <!-- newsletter modal -->
+<div class="newsletter-modal popup-wrapper">
+    <div class="popup-overlay"></div>
+    <div class="popup-content-wrapper d-center bg-n0">
+        <button
+            class="newsletter-close-btn popup-close-btn text-xl text-n100 position-absolute top-0 end-0 mt-lg-5 mt-3 me-lg-5 me-3">
+            <i class="ph ph-x"></i>
+        </button>
+
+        <div class="newsletter-banner d-none d-lg-block">
+            <img class="w-100" src="assets/images/newsletter.png" alt="banner">
+        </div>
+        <div class="newsletter-form-wrapper text-center p-xxl-10 p-xl-8 p-lg-6 p-4">
+            <h3 class="text-n100 mb-lg-4 mb-2">NEWSLETTER</h3>
+            <p class="text-base fw-normal mb-lg-8 mb-md-6 mb-4 text-n50">
+                Enjoy special offers, exclusive discounts and promotions only available to our subscribers
+            </p>
+            <form class="newsletter-form mb-xl-10 mb-lg-8 mb-md-6 mb-4">
+                <div
+                    class="d-flex align-items-center gap-1 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 bg-n0 mb-lg-6 mb-4">
+                    <span class="text-xl text-n50">
+                        <i class="ph ph-envelope-open"></i>
+                    </span>
+                    <input type="email" class="w-100 border-0 bg-n0" placeholder="Enter your email address">
+                </div>
+                <button type="submit" class="btn-secondary radius-unset">Subscribe</button>
+            </form>
+            <span class="text-base text-n100">
+                Have a Questions? E-mail us at info@example.com
+            </span>
+        </div>
+    </div>
+</div>
+<!-- newsletter modal -->
+
+    <!-- main start -->
+    <main class="pt-12">
+        <section class="checkout-section px-xl-20 px-lg-10 px-sm-7 overflow-lg-visible">
+            <div class="container-fluid">
+                <div class="row g-lg-0 g-6">
+                    <div class="col-lg-6 bg-n0 pt-lg-15 pt-10 pe-lg-15 overflow-hidden order-lg-first order-last">
+                        <div class="d-grid gap-lg-3 gap-2 mb-lg-8 mb-6">
+                            <label class="text-n100 text-xl fw-medium">Contact</label>
+                            <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                placeholder="Email or phone number">
+                            <label class="input-checkbox">
+                                <input type="checkbox" hidden>
+                                <span class="checkbox"></span>
+                                <span class="text-base text-n50">Email me with news and offers</span>
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-lg-4 gap-2 mb-lg-8 mb-6">
+                            <span class="text-n100 text-xl fw-medium">Delivery</span>
+                            <div class="d-grid gap-2">
+                                <label>Country/region</label>
+                                <div
+                                    class="country-select d-flex align-items-center  border border-n100-1 focus-secondary2 bg-n0 position-relative">
+                                    <select class="w-100 border-0 py-lg-4 py-2 px-xl-8 px-md-6 px-4 bg-n0">
+                                        <option value="1">United States</option>
+                                        <option value="2">Canada</option>
+                                        <option value="3">United Kingdom</option>
+                                    </select>
+                                    <span class="select-arrow"></span>
+                                </div>
+                            </div>
+                            <div class="d-lg-flex d-grid align-items-center gap-lg-4 gap-2">
+                                <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                    placeholder="First name">
+                                <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                    placeholder="Last name">
+                            </div>
+                            <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                placeholder="Company (optional)">
+                            <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                placeholder="Address">
+                            <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                placeholder="Apartment, suit, etc, (optional)">
+
+                            <div class="d-lg-flex d-grid align-items-center gap-lg-4 gap-2">
+                                <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                    placeholder="City">
+                                <input type="text" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                    placeholder="Postal code (optional)">
+                            </div>
+                            <input type="tel" class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                placeholder="Phone">
+                            <label class="input-checkbox">
+                                <input type="checkbox" hidden>
+                                <span class="checkbox"></span>
+                                <span class="text-base text-n50">Save this information for next time</span>
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-lg-4 gap-2 mb-lg-8 mb-6">
+                            <span class="text-n100 text-xl fw-medium">Shipping method</span>
+                            <div>
+                                <label
+                                    class="input-radiobox d-between gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                    <span class="d-flex align-items-center gap-lg-4 gap-2">
+                                        <input type="radio" name="shipping" value="Inside City" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Inside Dhaka City</span>
+                                    </span>
+                                    <span>Free</span>
+                                </label>
+                                <label
+                                    class="input-radiobox d-between gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                    <span class="d-flex align-items-center gap-lg-4 gap-2">
+                                        <input type="radio" name="shipping" value="Outside City" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Outside Dhaka City</span>
+                                    </span>
+                                    <span>$299.00 </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-lg-4 gap-2 mb-lg-8 mb-6">
+                            <div class="d-grid gap-1">
+                                <span class="text-n100 text-xl fw-medium">Payment</span>
+                                <span class="text-n50">All transactions are secure and encrypted.</span>
+                            </div>
+                            <div>
+                                <div class="input-info-wrapper">
+                                    <label
+                                        class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                        <input type="radio" name="payment" class="input-info-btn"
+                                            value="Cash on Delivery (COD)" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Cash on Delivery (COD) </span>
+                                    </label>
+                                    <div class="input-info">
+                                        <div class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100 bg-n20">
+                                            <span>Only applicable INSIDE DHAKA CITY</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-info-wrapper">
+                                    <label
+                                        class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                        <input type="radio" name="payment" class="input-info-btn" value="Paypal" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Paypal</span>
+                                    </label>
+                                    <div class="input-info">
+                                        <div class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100 bg-n20">
+                                            <a href="#"
+                                                class="d-center text-n0 text-base py-2 px-lg-6 px-4 bg-primary2 radius-4 hover-bg-secondary2">
+                                                Pay with
+                                                <img src="assets/images/paypal.png" alt="paypal">
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-info-wrapper">
+                                    <label
+                                        class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                        <input type="radio" name="payment" class="input-info-btn"
+                                            value="Bank Transfer - BEFTN/NPSB" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Bank Transfer - BEFTN/NPSB</span>
+                                    </label>
+                                    <div class="input-info">
+                                        <div class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100 bg-n20">
+                                            <span class="d-block text-n50 text-base mb-2">You can transfer the invoice
+                                                amount to
+                                                following Bank Account :</span>
+                                            <ul class="d-grid gap-1 mb-3">
+                                                <li>
+                                                    <span class="text-base fw-medium text-n100">
+                                                        Bank Name:
+                                                    </span>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        XYZ Bank
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <span class="text-base fw-medium text-n100">
+                                                        Account Name:
+                                                    </span>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        CycleCity Limited
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <span class="text-base fw-medium text-n100">
+                                                        Account Number:
+                                                    </span>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        123456789
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <span class="text-base fw-medium text-n100">
+                                                        Routing Number:
+                                                    </span>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        123456789
+                                                    </span>
+                                                </li>
+                                            </ul>
+                                            <span class="text-n50 text-base">Please call us at +880 123 456 789 to
+                                                confirm
+                                                the payment after the transfer.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-info-wrapper">
+                                    <label
+                                        class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                        <input type="radio" name="payment" class="input-info-btn"
+                                            value="Online Payment(Visa, MasterCard, MFS, Netbanking) - PortWallet"
+                                            hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Online Payment(Visa, MasterCard, MFS,
+                                            Netbanking) - PortWallet</span>
+                                    </label>
+                                    <div class="input-info">
+                                        <div class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100 bg-n20">
+                                            <a href="#"
+                                                class="d-center text-n0 text-base py-2 px-lg-6 px-4 bg-primary2 radius-4 hover-bg-secondary2">
+                                                Pay with
+                                                <img src="assets/images/visa.png" alt="visa">
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-info-wrapper">
+                                    <label
+                                        class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                        <input type="radio" name="payment" class="input-info-btn"
+                                            value="EMI - Credit Card" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">EMI - Credit Card</span>
+                                    </label>
+                                    <div class="input-info">
+                                        <div class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100 bg-n20">
+                                            <span class="d-block text-n50 text-base mb-2">EMI available for following
+                                                bank
+                                                credit card:</span>
+                                            <ul class="d-grid gap-1">
+                                                <li>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        XYZ Bank
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        ABC Bank
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        DEF Bank
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <span class="text-base fw-normal text-n100">
+                                                        GHI Bank
+                                                    </span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-lg-4 gap-2 mb-lg-8 mb-6">
+                            <span class="text-n100 text-xl fw-medium">Billing address</span>
+                            <div>
+                                <label
+                                    class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                    <input type="radio" name="billing-address" value="Same as shipping address" hidden>
+                                    <span class="checkbox"></span>
+                                    <span class="text-base text-n50">Same as shipping address</span>
+                                </label>
+                                <div class="input-info-wrapper d-grid gap-lg-6 gap-4">
+                                    <label
+                                        class="input-radiobox d-flex align-items-center gap-lg-4 gap-2 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100">
+                                        <input type="radio" class="input-info-btn" name="billing-address"
+                                            value="Use a different billing address" hidden>
+                                        <span class="checkbox"></span>
+                                        <span class="text-base text-n50">Use a different billing address</span>
+                                    </label>
+                                    <div class="input-info">
+                                        <div
+                                            class="d-grid gap-4 gap-2 py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100 bg-n20">
+                                            <span class="text-n100 text-xl fw-medium">Delivery</span>
+                                            <div class="d-grid gap-2">
+                                                <label>Country/region</label>
+                                                <div
+                                                    class="country-select d-flex align-items-center  border border-n100-1 focus-secondary2 bg-n0 position-relative">
+                                                    <select
+                                                        class="w-100 border-0 py-lg-4 py-2 px-xl-8 px-md-6 px-4 bg-n0">
+                                                        <option value="1">United States</option>
+                                                        <option value="2">Canada</option>
+                                                        <option value="3">United Kingdom</option>
+                                                    </select>
+                                                    <span class="select-arrow"></span>
+                                                </div>
+                                            </div>
+                                            <div class="d-lg-flex d-grid align-items-center gap-lg-4 gap-2">
+                                                <input type="text"
+                                                    class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                    placeholder="First name">
+                                                <input type="text"
+                                                    class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                    placeholder="Last name">
+                                            </div>
+                                            <input type="text"
+                                                class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                placeholder="Company (optional)">
+                                            <input type="text"
+                                                class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                placeholder="Address">
+                                            <input type="text"
+                                                class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                placeholder="Apartment, suit, etc, (optional)">
+
+                                            <div class="d-lg-flex d-grid align-items-center gap-lg-4 gap-2">
+                                                <input type="text"
+                                                    class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                    placeholder="City">
+                                                <input type="text"
+                                                    class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                    placeholder="Postal code (optional)">
+                                            </div>
+                                            <input type="tel"
+                                                class="py-lg-4 py-2 px-lg-6 px-4 border border-n100-1 w-100"
+                                                placeholder="Phone">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pb-120">
+                            <button type="submit"
+                                class="btn-secondary text-base fw-medium radius-unset py-lg-4 py-2 px-xl-8 px-md-6 px-4 w-100">
+                                Complete Order
+                            </button>
+                        </div>
+                        <span class="d-block border-bottom border-n100-1"></span>
+                        <div class="pt-4 pb-xl-10 pb-md-8 pb-6">
+                            <ul
+                                class="d-between column-gap-4 justify-content-3xl-between justify-content-start flex-wrap">
+                                <li>
+                                    <a href="exchange-return.html"
+                                        class="text-base text-n50 hover-text-secondary2 text-decoration-underline">Refund
+                                        policy</a>
+                                </li>
+                                <li>
+                                    <a href="privacy-policy.html"
+                                        class="text-base text-n50 hover-text-secondary2 text-decoration-underline">Privacy
+                                        policy</a>
+                                </li>
+                                <li>
+                                    <a href="shipping-delivery.html"
+                                        class="text-base text-n50 hover-text-secondary2 text-decoration-underline">Shipping
+                                        policy</a>
+                                </li>
+                                <li>
+                                    <a href="terms-conditions.html"
+                                        class="text-base text-n50 hover-text-secondary2 text-decoration-underline">Terms
+                                        of service</a>
+                                </li>
+                                <li>
+                                    <a href="#"
+                                        class="text-base text-n50 hover-text-secondary2 text-decoration-underline">Subscription
+                                        policy</a>
+                                </li>
+                                <li>
+                                    <a href="contact-us.html"
+                                        class="text-base text-n50 hover-text-secondary2 text-decoration-underline">Contact
+                                        information</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div
+                        class="col-lg-6 bg-n20 pt-lg-15 pt-10 pb-lg-0 pb-10 ps-lg-15 checkout-right position-relative z-1">
+                        <div class="position-sticky top-15">
+                            <div class="product-list-wrapper d-grid gap-4 mb-lg-6 mb-4">
+                                <div class="product-list d-between">
+                                    <div class="d-flex align-items-center gap-4">
+                                        <div class="product-image max-w-120px bg-n0 p-1 position-relative">
+                                            <span
+                                                class="badge bg-primary2 text-n0 text-sm fw-medium position-absolute top-0 right-n10 radius-pill translate-middle">1</span>
+                                            <img class="w-100" src="assets/images/product-1.png" alt="product image">
+                                        </div>
+                                        <div class="product-info d-flex flex-column">
+                                            <span class="text-n100 text-base fw-medium">Giant Defy Advanced</span>
+                                            <span class="text-sm text-n50">Green / S2</span>
+                                        </div>
+                                    </div>
+                                    <div class="product-price">
+                                        <span class="text-secondary2 text-base fw-medium">$299.00</span>
+                                    </div>
+                                </div>
+                                <div class="product-list d-between">
+                                    <div class="d-flex align-items-center gap-4">
+                                        <div class="product-image max-w-120px bg-n0 p-1 position-relative">
+                                            <span
+                                                class="badge bg-primary2 text-n0 text-sm fw-medium position-absolute top-0 right-n10 radius-pill translate-middle">1</span>
+                                            <img class="w-100" src="assets/images/product-2.png" alt="product image">
+                                        </div>
+                                        <div class="product-info d-flex flex-column">
+                                            <span class="text-n100 text-base fw-medium">Cannondale Topstone</span>
+                                            <span class="text-sm text-n50">Orange / S2</span>
+                                        </div>
+                                    </div>
+                                    <div class="product-price">
+                                        <span class="text-secondary2 text-base fw-medium">$250.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <form action="#" class="mb-lg-6 mb-4">
+                                <div class="d-flex align-items-center border border-n100-1 bg-n0">
+                                    <input type="text"
+                                        class="w-100 border-0 py-lg-4 py-2 px-xl-8 px-md-6 px-4 text-n100"
+                                        placeholder="Coupon code">
+                                    <button type="submit"
+                                        class="text-base fw-medium text-n0 bg-n100 py-lg-4 py-2 px-xl-8 px-md-6 px-4">
+                                        Apply
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="d-grid gap-lg-4 gap-2">
+                                <div class="d-grid gap-lg-3 gap-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-n50 text-base fw-normal">Subtotal</span>
+                                        <span class="text-n50 text-base fw-normal">$549.00</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-n50 text-base fw-normal">Shipping</span>
+                                        <span class="text-n50 text-base fw-normal">Free</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-n100 text-xl fw-semibold">Total</span>
+                                    <span class="text-n100 text-xl fw-semibold">$549.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- main end -->
+
+</body>
+
+
+<!-- Mirrored from bicycle-store-html.vercel.app/checkout.html by HTTrack Website Copier/3.x [XR&CO'2014], Tue, 15 Jul 2025 10:30:52 GMT -->
+</html>

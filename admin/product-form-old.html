@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - Cycle Selling Admin</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        /* Custom monochrome styling */
+        :root {
+            --sidebar-width: 250px;
+            --navbar-height: 60px;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: #212529;
+            color: white;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 12px 20px;
+            border-radius: 0;
+            transition: all 0.3s;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #495057;
+            color: white;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        /* Main content area */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding-top: var(--navbar-height);
+            min-height: 100vh;
+        }
+        
+        /* Top navbar */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--navbar-height);
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+            z-index: 999;
+        }
+        
+        /* Form styling */
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #6c757d;
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+        }
+        
+        /* Image upload area */
+        .image-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .image-upload-area:hover {
+            border-color: #6c757d;
+            background-color: #e9ecef;
+        }
+        
+        .image-upload-area.dragover {
+            border-color: #495057;
+            background-color: #e9ecef;
+        }
+        
+        /* Image preview */
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .image-preview-container {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        /* Price input styling */
+        .price-input {
+            position: relative;
+        }
+        
+        .price-input::before {
+            content: '$';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        .price-input input {
+            padding-left: 25px;
+        }
+        
+        /* Specifications section */
+        .spec-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .top-navbar {
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="p-3">
+            <h4 class="text-white mb-4">
+                <i class="bi bi-bicycle"></i> Cycle Admin
+            </h4>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="dashboard.html">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="categories.html">
+                    <i class="bi bi-tags"></i> Categories
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="products.html">
+                    <i class="bi bi-box-seam"></i> Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#orders">
+                    <i class="bi bi-cart-check"></i> Orders
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#customers">
+                    <i class="bi bi-people"></i> Customers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#settings">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white top-navbar">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <a href="products.html" class="btn btn-outline-secondary btn-sm me-3">
+                    <i class="bi bi-arrow-left"></i> Back to Products
+                </a>
+                <h5 class="mb-0 text-dark">Add New Product</h5>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="text-muted me-3">Welcome, Admin</span>
+                <i class="bi bi-person-circle fs-4 text-secondary"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container-fluid p-4">
+            <form id="productForm">
+                <div class="row">
+                    <!-- Left Column - Main Product Info -->
+                    <div class="col-lg-8">
+                        <!-- Basic Information -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 text-dark">
+                                    <i class="bi bi-info-circle me-2"></i>Basic Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Product Name -->
+                                <div class="mb-4">
+                                    <label for="productName" class="form-label">Product Name *</label>
+                                    <input type="text" class="form-control" id="productName" placeholder="Enter product name" required>
+                                    <div class="form-text">Enter a clear, descriptive name for your product</div>
+                                </div>
+
+                                <!-- Product Description -->
+                                <div class="mb-4">
+                                    <label for="productDescription" class="form-label">Product Description *</label>
+                                    <textarea class="form-control" id="productDescription" rows="6" placeholder="Enter detailed product description" required></textarea>
+                                    <div class="form-text">Provide a comprehensive description of the product features and benefits</div>
+                                </div>
+
+                                <!-- Short Description -->
+                                <div class="mb-4">
+                                    <label for="shortDescription" class="form-label">Short Description</label>
+                                    <textarea class="form-control" id="shortDescription" rows="3" placeholder="Enter brief product summary"></textarea>
+                                    <div class="form-text">Brief summary for product listings (optional)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Images -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 text-dark">
+                                    <i class="bi bi-images me-2"></i>Product Images
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Image Upload Area -->
+                                <div class="image-upload-area" id="imageUploadArea">
+                                    <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
+                                    <h6 class="text-muted">Drag & Drop Images Here</h6>
+                                    <p class="text-muted mb-3">or</p>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('imageInput').click()">
+                                        <i class="bi bi-folder2-open me-2"></i>Browse Files
+                                    </button>
+                                    <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+                                    <div class="form-text mt-3">Upload multiple images. First image will be the main product image.</div>
+                                </div>
+
+                                <!-- Image Previews -->
+                                <div id="imagePreviews" class="mt-4"></div>
+                            </div>
+                        </div>
+
+                        <!-- Product Specifications -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 text-dark">
+                                    <i class="bi bi-gear me-2"></i>Product Specifications
+                                </h5>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="addSpecBtn">
+                                    <i class="bi bi-plus"></i> Add Specification
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="specificationsContainer">
+                                    <!-- Default specifications for bikes -->
+                                    <div class="spec-item">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control" placeholder="Specification name" value="Frame Material">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" placeholder="Specification value" value="">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-spec">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="spec-item">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control" placeholder="Specification name" value="Wheel Size">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" placeholder="Specification value" value="">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-spec">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Product Details -->
+                    <div class="col-lg-4">
+                        <!-- Pricing & Inventory -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 text-dark">
+                                    <i class="bi bi-currency-dollar me-2"></i>Pricing & Inventory
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Regular Price -->
+                                <div class="mb-3">
+                                    <label for="regularPrice" class="form-label">Regular Price *</label>
+                                    <div class="price-input">
+                                        <input type="number" class="form-control" id="regularPrice" placeholder="0.00" step="0.01" min="0" required>
+                                    </div>
+                                </div>
+
+                                <!-- Sale Price -->
+                                <div class="mb-3">
+                                    <label for="salePrice" class="form-label">Sale Price</label>
+                                    <div class="price-input">
+                                        <input type="number" class="form-control" id="salePrice" placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                    <div class="form-text">Leave empty if not on sale</div>
+                                </div>
+
+                                <!-- Stock Quantity -->
+                                <div class="mb-3">
+                                    <label for="stockQuantity" class="form-label">Stock Quantity *</label>
+                                    <input type="number" class="form-control" id="stockQuantity" placeholder="0" min="0" required>
+                                </div>
+
+                                <!-- SKU -->
+                                <div class="mb-3">
+                                    <label for="productSku" class="form-label">SKU</label>
+                                    <input type="text" class="form-control" id="productSku" placeholder="Enter product SKU">
+                                    <div class="form-text">Stock Keeping Unit (optional)</div>
+                                </div>
+
+                                <!-- Stock Status -->
+                                <div class="mb-3">
+                                    <label for="stockStatus" class="form-label">Stock Status *</label>
+                                    <select class="form-select" id="stockStatus" required>
+                                        <option value="in-stock">In Stock</option>
+                                        <option value="out-of-stock">Out of Stock</option>
+                                        <option value="on-backorder">On Backorder</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Organization -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 text-dark">
+                                    <i class="bi bi-tags me-2"></i>Product Organization
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Category -->
+                                <div class="mb-3">
+                                    <label for="productCategory" class="form-label">Category *</label>
+                                    <select class="form-select" id="productCategory" required>
+                                        <option value="">Select Category</option>
+                                        <option value="mountain-bikes">Mountain Bikes</option>
+                                        <option value="road-bikes">Road Bikes</option>
+                                        <option value="electric-bikes">Electric Bikes</option>
+                                        <option value="bmx-bikes">BMX Bikes</option>
+                                        <option value="city-bikes">City Bikes</option>
+                                        <option value="hybrid-bikes">Hybrid Bikes</option>
+                                    </select>
+                                </div>
+
+                                <!-- Brand -->
+                                <div class="mb-3">
+                                    <label for="productBrand" class="form-label">Brand</label>
+                                    <input type="text" class="form-control" id="productBrand" placeholder="Enter brand name">
+                                </div>
+
+                                <!-- Tags -->
+                                <div class="mb-3">
+                                    <label for="productTags" class="form-label">Tags</label>
+                                    <input type="text" class="form-control" id="productTags" placeholder="Enter tags separated by commas">
+                                    <div class="form-text">e.g., mountain, outdoor, sport, professional</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Product Status -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 text-dark">
+                                    <i class="bi bi-toggle-on me-2"></i>Product Status
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Status -->
+                                <div class="mb-3">
+                                    <label for="productStatus" class="form-label">Status *</label>
+                                    <select class="form-select" id="productStatus" required>
+                                        <option value="draft">Draft</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+
+                                <!-- Featured Product -->
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="featuredProduct">
+                                        <label class="form-check-label" for="featuredProduct">
+                                            Featured Product
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Mark as featured to highlight on homepage</div>
+                                </div>
+
+                                <!-- Visibility -->
+                                <div class="mb-3">
+                                    <label for="productVisibility" class="form-label">Visibility</label>
+                                    <select class="form-select" id="productVisibility">
+                                        <option value="visible">Visible</option>
+                                        <option value="hidden">Hidden</option>
+                                        <option value="password-protected">Password Protected</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-dark">
+                                        <i class="bi bi-check-circle me-2"></i>Save Product
+                                    </button>
+                                    <button type="button" class="btn btn-outline-dark">
+                                        <i class="bi bi-eye me-2"></i>Save & Preview
+                                    </button>
+                                    <a href="products.html" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Image upload functionality
+        const imageInput = document.getElementById('imageInput');
+        const imageUploadArea = document.getElementById('imageUploadArea');
+        const imagePreviews = document.getElementById('imagePreviews');
+        let uploadedImages = [];
+
+        // Handle file input change
+        imageInput.addEventListener('change', handleImageUpload);
+
+        // Handle drag and drop
+        imageUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageUploadArea.classList.add('dragover');
+        });
+
+        imageUploadArea.addEventListener('dragleave', () => {
+            imageUploadArea.classList.remove('dragover');
+        });
+
+        imageUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleImageFiles(files);
+        });
+
+        function handleImageUpload(e) {
+            const files = e.target.files;
+            handleImageFiles(files);
+        }
+
+        function handleImageFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        addImagePreview(e.target.result, file.name);
+                    };
+                    reader.readAsDataURL(file);
+                    uploadedImages.push(file);
+                }
+            });
+        }
+
+        function addImagePreview(src, name) {
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'image-preview-container';
+            
+            previewContainer.innerHTML = `
+                <img src="${src}" alt="${name}" class="image-preview">
+                <button type="button" class="remove-image" onclick="removeImage(this)">
+                    <i class="bi bi-x"></i>
+                </button>
+            `;
+            
+            imagePreviews.appendChild(previewContainer);
+        }
+
+        function removeImage(button) {
+            const container = button.parentElement;
+            const index = Array.from(imagePreviews.children).indexOf(container);
+            uploadedImages.splice(index, 1);
+            container.remove();
+        }
+
+        // Specifications functionality
+        const addSpecBtn = document.getElementById('addSpecBtn');
+        const specificationsContainer = document.getElementById('specificationsContainer');
+
+        addSpecBtn.addEventListener('click', addSpecification);
+
+        function addSpecification() {
+            const specItem = document.createElement('div');
+            specItem.className = 'spec-item';
+            specItem.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" placeholder="Specification name">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" placeholder="Specification value">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-spec">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            specificationsContainer.appendChild(specItem);
+        }
+
+        // Remove specification
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-spec')) {
+                e.target.closest('.spec-item').remove();
+            }
+        });
+
+        // Auto-generate SKU from product name
+        document.getElementById('productName').addEventListener('input', function() {
+            const name = this.value;
+            const sku = name.toUpperCase()
+                .replace(/[^A-Z0-9 ]/g, '')
+                .replace(/\s+/g, '-')
+                .substring(0, 10);
+            
+            if (sku && !document.getElementById('productSku').value) {
+                document.getElementById('productSku').value = sku + '-' + Math.floor(Math.random() * 1000);
+            }
+        });
+
+        // Update stock status based on quantity
+        document.getElementById('stockQuantity').addEventListener('input', function() {
+            const quantity = parseInt(this.value);
+            const statusSelect = document.getElementById('stockStatus');
+            
+            if (quantity === 0) {
+                statusSelect.value = 'out-of-stock';
+            } else if (quantity > 0) {
+                statusSelect.value = 'in-stock';
+            }
+        });
+
+        // Form submission
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Basic validation
+            const requiredFields = ['productName', 'productDescription', 'regularPrice', 'stockQuantity', 'productCategory', 'productStatus'];
+            let isValid = true;
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Collect form data
+            const formData = {
+                name: document.getElementById('productName').value,
+                description: document.getElementById('productDescription').value,
+                shortDescription: document.getElementById('shortDescription').value,
+                regularPrice: document.getElementById('regularPrice').value,
+                salePrice: document.getElementById('salePrice').value,
+                stockQuantity: document.getElementById('stockQuantity').value,
+                sku: document.getElementById('productSku').value,
+                stockStatus: document.getElementById('stockStatus').value,
+                category: document.getElementById('productCategory').value,
+                brand: document.getElementById('productBrand').value,
+                tags: document.getElementById('productTags').value,
+                status: document.getElementById('productStatus').value,
+                featured: document.getElementById('featuredProduct').checked,
+                visibility: document.getElementById('productVisibility').value,
+                images: uploadedImages,
+                specifications: getSpecifications()
+            };
+            
+            // Simulate form submission
+            console.log('Product Data:', formData);
+            alert('Product added successfully!');
+            
+            // In a real application, you would send this data to your backend
+            // window.location.href = 'products.html';
+        });
+
+        function getSpecifications() {
+            const specs = [];
+            const specItems = document.querySelectorAll('.spec-item');
+            
+            specItems.forEach(item => {
+                const nameInput = item.querySelector('input[placeholder="Specification name"]');
+                const valueInput = item.querySelector('input[placeholder="Specification value"]');
+                
+                if (nameInput.value.trim() && valueInput.value.trim()) {
+                    specs.push({
+                        name: nameInput.value.trim(),
+                        value: valueInput.value.trim()
+                    });
+                }
+            });
+            
+            return specs;
+        }
+
+        // Price validation
+        document.getElementById('salePrice').addEventListener('input', function() {
+            const regularPrice = parseFloat(document.getElementById('regularPrice').value) || 0;
+            const salePrice = parseFloat(this.value) || 0;
+            
+            if (salePrice > 0 && salePrice >= regularPrice) {
+                this.setCustomValidity('Sale price must be less than regular price');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+</body>
+</html>
