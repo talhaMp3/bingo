@@ -1,23 +1,50 @@
 <?php
+session_start();
 include_once './include/connection.php';
 include_once './layout/header.php';
 
 // $products_query = "SELECT * FROM products WHERE status = 'active' ORDER BY name ASC";
+// $products_query = "
+// SELECT 
+//     products.*, 
+//     categories.name AS category_name, 
+//     categories.slug AS category_slug
+// FROM 
+//     products
+// JOIN 
+//     categories ON products.category_id = categories.id
+// WHERE 
+//     products.status = 'active'
+// ORDER BY 
+//     products.name ASC";
+
+// $products_result = mysqli_query($conn, $products_query);
+
+$user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
+
 $products_query = "
 SELECT 
     products.*, 
     categories.name AS category_name, 
-    categories.slug AS category_slug
+    categories.slug AS category_slug,
+    IF(wishlist.id IS NOT NULL, 1, 0) AS in_wishlist
 FROM 
     products
 JOIN 
     categories ON products.category_id = categories.id
+LEFT JOIN 
+    wishlist ON wishlist.product_id = products.id AND wishlist.user_id = ?
 WHERE 
     products.status = 'active'
 ORDER BY 
-    products.name ASC";
+    products.name ASC
+";
 
-$products_result = mysqli_query($conn, $products_query);
+$stmt = $conn->prepare($products_query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$products_result = $stmt->get_result();
+
 ?>
 <!-- main start -->
 <main class="pt-lg-6">
@@ -334,9 +361,17 @@ $products_result = mysqli_query($conn, $products_query);
             <!-- product item -->
             <div class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
               <div class="product-thumb-wrapper position-relative">
-                <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left addToWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $item['id'] ?>">
-                  <i class="ph ph-heart"></i>
-                </button>
+                <?php if ($item['in_wishlist']) { ?>
+                  <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left removeFromWishlist" data-tooltip="Remove from wishlist" data-product="<?php echo  $item['id'] ?>">
+                    <i class="ph-heart ph-fill"></i>
+                  </button>
+
+                <?php  } else { ?>
+
+                  <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left addToWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $item['id'] ?>">
+                    <i class="ph ph-heart"></i>
+                  </button>
+                <?php } ?>
                 <div class="product-thumb reveal-left hover-cursor" data-hover-text="View Product">
                   <a href="shop-details.php?slug=<?php echo $item['slug']; ?>" class="product-thumb-link d-block">
                     <?php

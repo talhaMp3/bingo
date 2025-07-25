@@ -49,10 +49,11 @@ if (isset($slug) && isset($variant)) {
 
 ?>
 <?php
+session_start();
 include_once './include/connection.php';
 
-$variant = isset($_GET['variant']) ? $_GET['variant'] : null;
 $slug = mysqli_real_escape_string($conn, $_GET['slug']);
+$variant = isset($_GET['variant']) ? $_GET['variant'] : null;
 
 // First, get the main product data
 $query = "
@@ -82,6 +83,24 @@ if (!$product) {
 }
 
 $product_id = $product['id'];
+$user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
+
+if (isset($variant)) {
+
+    $sql = "SELECT * FROM wishlist WHERE user_id = ? AND product_id = ? AND variant_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iii", $user_id, $product_id, $variant);
+} elseif (isset($product_id)) {
+
+    $sql = "SELECT * FROM wishlist WHERE user_id = ? AND product_id = ? AND variant_id IS NULL";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ii", $user_id, $product_id);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+// $wishlist_item = $result->fetch_assoc();
+// print_r($result);
+// exit();
 
 // Get all variants for this product
 $variant_query = "
@@ -111,6 +130,7 @@ if ($variant && !empty($variants)) {
 
     // If variant found, override product data with variant data
     if ($selectedVariant) {
+        $displayProduct['variant_id'] = $selectedVariant['id'];
         $displayProduct['price'] = $selectedVariant['price'];
         $displayProduct['discount_price'] = $selectedVariant['discount_price'];
         $displayProduct['stock_quantity'] = $selectedVariant['stock_quantity'];
@@ -217,10 +237,17 @@ include_once './layout/header.php';
                     <div class="position-sticky top-15">
                         <div class="d-flex align-items-center justify-content-between mb-lg-4 mb-md-3 mb-2">
                             <h1 class="mb-lg-4 mb-2 fs-2"><?= $displayProduct['name'] ?></h1>
-
-                            <button class=" single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left tooltip-btn tooltip-left addToWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $displayProduct['id'] ?>">
-                                <i class="ph ph-heart"></i>
-                            </button>
+                            <?php if ($result->num_rows > 0) { ?>
+                                <button class=" single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left tooltip-btn tooltip-left removeFromWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $displayProduct['id'] ?>"
+                                    data-variant="<?php echo isset($displayProduct['variant_id']) ? $displayProduct['variant_id'] : ''; ?>">
+                                    <i class="ph-heart ph-fill"></i>
+                                </button>
+                            <?php } elseif ($result->num_rows == 0) { ?>
+                                <button class=" single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left tooltip-btn tooltip-left addToWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $displayProduct['id'] ?>"
+                                    data-variant="<?php echo isset($displayProduct['variant_id']) ? $displayProduct['variant_id'] : ''; ?>">
+                                    <i class="ph ph-heart"></i>
+                                </button>
+                            <?php } ?>
                         </div>
                         <div
                             class="d-flex align-items-center gap-4xl-20 gap-3xl-15 gap-xl-10 gap-lg-8 gap-md-6 gap-4 gap-4 mb-lg-8 mb-md-6 mb-4">
@@ -878,7 +905,7 @@ include_once './layout/header.php';
                     </div>
 
                     <!-- Size Chart -->
-                    <a href="assets/file/size-chart.pdf" class="w-100 d-between p-lg-6 p-4 bg-n20 mb-lg-6 mb-4">
+                    <a href="assets/file/size-chart.pdf" target="_pdfFileSizeChart" class="w-100 d-between p-lg-6 p-4 bg-n20 mb-lg-6 mb-4">
                         <span class="text-base fw-semibold font-noto-sans">Size Chart</span>
                         <span class="d-flex text-xl"><i class="ph ph-warning"></i></span>
                     </a>

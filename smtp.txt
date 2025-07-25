@@ -1,0 +1,25 @@
+function sendEmail($subject, $body, $address, $fromEmail)
+{
+    $mail = new PHPMailer();
+    $mail->IsSMTP();
+    $mail->SMTPAuth = true;
+    $mail->SMTPSecure = 'tls';
+    $mail->Host = "smtp.gmail.com";
+    $mail->Port = 587;
+    $mail->IsHTML(true);
+    $mail->CharSet = 'UTF-8';
+    //$mail->SMTPDebug = 2; // Enable this for detailed debug output
+    $mail->Username = $fromEmail;
+    $mail->Password = "";
+    $mail->SetFrom($fromEmail, "Oberon");
+    $mail->Subject = $subject;
+    $mail->Body = $body;
+    $mail->AddAddress($address);
+    $mail->SMTPOptions = array('ssl' => array('verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => false));
+
+    if (!$mail->Send()) {
+        echo "Mailer Error: " . $mail->ErrorInfo;
+    } else {
+        echo "Email sent Successfully.";
+    }
+}

@@ -1,10 +1,9 @@
 <?php
-$host = 'localhost';
-$user = 'root';
-$password = '';
-$database = 'bingo_cycle';
+$host = $_ENV['DB_HOST'] ?? '127.0.0.1';
+$user = $_ENV['DB_USER'] ?? 'root';
+$password = $_ENV['DB_PASSWORD'] ?? '';
+$database = $_ENV['DB_DATABASE'] ?? 'bingo_cycle';
 
-// Create connection
 $conn = mysqli_connect($host, $user, $password, $database);
 
 // Check connection
@@ -12,8 +11,15 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
+require './vendor/autoload.php';
 
+$whoops = new \Whoops\Run;
+$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+$whoops->register();
 mysqli_set_charset($conn, "utf8");
+
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
 
 
 function log_activity($conn, $type, $action, $message, $user_type = 'admin', $user_id = null)

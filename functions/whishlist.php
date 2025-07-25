@@ -1,18 +1,19 @@
 <?php
+session_start();
 include_once '../include/connection.php';
 // Check if user is logged in
-
-if (!isset($_SESSION['user_id'])) {
-    if (isset($_POST['action']) || isset($_GET['action'])) {
-        echo json_encode(['success' => false, 'message' => 'Please login to manage wishlist']);
-        exit;
-    }
-    header('Location: login.php');
+$user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
+if (!isset($user_id) || empty($user_id)) {
+    // if (isset($_POST['action']) || isset($_GET['action'])) {
+    echo json_encode(['success' => false, 'message' => 'Please login to manage wishlist']);
     exit;
+    // }
+    // header('Location: login.php');
+    // exit;
 }
 
-$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 
+// return $user_id;
 // Handle AJAX requests
 if (isset($_POST['action']) || isset($_GET['action'])) {
     $action = $_POST['action'] ?? $_GET['action'];
@@ -21,20 +22,22 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
         case 'add':
             if (isset($_POST['product_id'])) {
                 $product_id = intval($_POST['product_id']);
-
+                $variant_id = isset($_POST['variant_id']) ? intval($_POST['variant_id']) : null;
+                // return print_r($variant_id);
+                // exit;
                 // Check if already exists
-                $check_sql = "SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?";
+                $check_sql = "SELECT id FROM wishlist WHERE user_id = ? AND product_id = ? AND variant_id = ?";
                 $check_stmt = $conn->prepare($check_sql);
-                $check_stmt->bind_param("ii", $user_id, $product_id);
+                $check_stmt->bind_param("iii", $user_id, $product_id, $variant_id);
                 $check_stmt->execute();
                 $result = $check_stmt->get_result();
 
                 if ($result->num_rows > 0) {
                     echo json_encode(['success' => false, 'message' => 'Product already in wishlist']);
                 } else {
-                    $insert_sql = "INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)";
+                    $insert_sql = "INSERT INTO wishlist (user_id, product_id, variant_id) VALUES (?, ?, ?)";
                     $insert_stmt = $conn->prepare($insert_sql);
-                    $insert_stmt->bind_param("ii", $user_id, $product_id);
+                    $insert_stmt->bind_param("iii", $user_id, $product_id, $variant_id);
 
                     if ($insert_stmt->execute()) {
                         echo json_encode(['success' => true, 'message' => 'Product added to wishlist successfully']);

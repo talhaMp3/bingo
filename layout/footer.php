@@ -196,16 +196,32 @@
 <!-- footer section end -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php if (isset($_SESSION['toast'])): ?>
+    <script>
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: '<?= $_SESSION['toast']['type'] ?>',
+            title: '<?= $_SESSION['toast']['message'] ?>',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+        });
+    </script>
+    <?php unset($_SESSION['toast']); ?>
+<?php endif; ?>
+
 <script>
     $(document).ready(function() {
         // Add to wishlist function (for use in other pages)
-        window.addToWishlist = function(productId, button) {
+        window.addToWishlist = function(productId, variantId, button) {
             $.ajax({
                 url: 'functions/whishlist.php',
                 type: 'POST',
                 data: {
                     action: 'add',
-                    product_id: productId
+                    product_id: productId,
+                    variant_id: variantId
                 },
                 dataType: 'json',
                 beforeSend: function() {
@@ -225,7 +241,7 @@
                 },
                 error: function() {
                     $(button).removeClass('btn-loading').html('<i class="ph-heart ph-fill"></i>');
-                    showToast('error', 'An error occurred while adding to wishlist');
+                    showToast('error', response.message || 'An error occurred while adding to wishlist');
                 }
             });
         };
@@ -233,7 +249,9 @@
         // Add to wishlist event
         $(document).on('click', '.addToWishlist', function() {
             var productId = $(this).data('product');
-            addToWishlist(productId, this);
+            var variantId = $(this).data('variant');
+
+            addToWishlist(productId, variantId, this);
         });
 
         // Remove from wishlist
@@ -242,11 +260,12 @@
             var button = $(this);
             var container = button.closest('.wishlist-item-container');
             Swal.fire({
+                toast: false,
                 title: "Are you sure you want to remove this item from your wishlist?",
-                showDenyButton: true,
+                showDenyButton: false,
                 showCancelButton: true,
                 confirmButtonText: "Remove",
-                denyButtonText: `Don't remove`
+                denyButtonText: `Don't remove`,
             }).then((result) => {
                 /* Read more about isConfirmed, isDenied below */
                 if (result.isConfirmed) {
@@ -264,6 +283,7 @@
                         },
                         success: function(response) {
                             if (response.success) {
+
                                 if (container.length) {
                                     // On wishlist page - remove the item
                                     container.fadeOut(300, function() {
