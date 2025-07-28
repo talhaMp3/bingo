@@ -35,12 +35,6 @@
     <script defer src="assets/js/main.js"></script>
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<?php
-
-$message = $_GET['message'];
-echo $message;
-
-?>
 
 <body>
     <!-- preloader -->
@@ -607,7 +601,7 @@ echo $message;
                         </nav>
                         <!-- search bar area -->
                         <div class="search-bar search-form-wrapper">
-                            <form 
+                            <form
                                 class="header-search-form d-flex align-items-center gap-3 py-lg-3 py-2 px-xxl-6 px-md-4 px-3 radius-pill border border-n100-6 bg-n20 w-100 focus-secondary2">
                                 <input type="text" placeholder="Search Bikes, Gear & Accessories"
                                     class="w-100 border-0 outline-0 bg-transparent">

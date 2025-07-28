@@ -1,44 +1,46 @@
 <?php
-// Get parameters from request
-$product_id = isset($_GET['product_id']) ? intval($_GET['product_id']) : 0;
-$quantity = isset($_GET['quantity']) ? intval($_GET['quantity']) : 1;
-$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
-$action = isset($_GET['action']) ? $_GET['action'] : 'add_to_cart'; // Default action
-
-// Set content type to JSON
+session_start();
 header('Content-Type: application/json');
 
-// Validate required parameters
-if ($product_id <= 0) {
-    echo json_encode(['error' => 'Invalid product ID']);
+require_once '../include/connection.php';
+
+$product_id = intval($_POST['product_id'] ?? 0);
+$variant_id = isset($_POST['variant_id']) ? intval($_POST['variant_id']) : null;
+$quantity = intval($_POST['quantity'] ?? 1);
+$action = $_POST['action'] ?? 'add_to_cart';
+$user_id = $_SESSION['user_id'] ?? null;
+
+// Check login
+if (!$user_id) {
+    echo json_encode([
+        'success' => false,
+        'login_required' => true,
+        'message' => 'Please login to add items to cart.'
+    ]);
     exit;
 }
 
-if ($user_id <= 0) {
-    echo json_encode(['error' => 'User ID is required']);
+// Validate product
+if ($product_id <= 0 || $quantity <= 0) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid product or quantity.'
+    ]);
     exit;
 }
 
-// Handle different actions
+// Handle actions
 switch ($action) {
     case 'add_to_cart':
-        addToCart($conn, $user_id, $product_id, $quantity);
-        break;
-
-    case 'add_to_wishlist':
-        addToWishlist($conn, $user_id, $product_id);
-        break;
-
-    case 'remove_from_wishlist':
-        removeFromWishlist($conn, $user_id, $product_id);
+        addToCart($conn, $user_id, $product_id, $variant_id, $quantity);
         break;
 
     case 'move_to_cart':
         moveWishlistToCart($conn, $user_id, $product_id, $quantity);
         break;
 
-    case 'get_wishlist':
-        getWishlist($conn, $user_id);
+    case 'get_cart':
+        getCart($conn, $user_id);
         break;
 
     case 'check_wishlist':
@@ -46,107 +48,85 @@ switch ($action) {
         break;
 
     default:
-        echo json_encode(['error' => 'Invalid action']);
-        exit;
+        echo json_encode(['success' => false, 'message' => 'Unknown action.']);
+        break;
 }
 
-// Function to add product to cart
-function addToCart($conn, $user_id, $product_id, $quantity)
+function addToCart($conn, $user_id, $product_id, $variant_id, $quantity)
 {
-    if ($quantity <= 0) {
-        echo json_encode(['error' => 'Invalid quantity']);
-        return;
-    }
+    $price = null;
 
-    $sql = "INSERT INTO cart (user_id, product_id, quantity, created_at) 
-            VALUES (?, ?, ?, NOW()) 
-            ON DUPLICATE KEY UPDATE 
-            quantity = quantity + ?, 
-            updated_at = NOW()";
-
+    $sql = "SELECT id FROM cart WHERE user_id = ? AND product_id = ? AND variant_id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiii", $user_id, $product_id, $quantity, $quantity);
-
-    if ($stmt->execute()) {
-        if ($stmt->affected_rows > 0) {
-            echo json_encode([
-                'success' => 'Product added to cart successfully',
-                'action' => 'add_to_cart',
-                'product_id' => $product_id,
-                'quantity' => $quantity
-            ]);
-        } else {
-            echo json_encode(['error' => 'Product already in cart with same quantity']);
-        }
-    } else {
-        echo json_encode(['error' => 'Failed to add product to cart: ' . $conn->error]);
-    }
-
-    $stmt->close();
-}
-
-// Function to add product to wishlist
-function addToWishlist($conn, $user_id, $product_id)
-{
-    // Check if product already exists in wishlist
-    $check_sql = "SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?";
-    $check_stmt = $conn->prepare($check_sql);
-    $check_stmt->bind_param("ii", $user_id, $product_id);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result();
-
+    $stmt->bind_param("iii", $user_id, $product_id, $variant_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
     if ($result->num_rows > 0) {
-        echo json_encode([
-            'error' => 'Product already exists in wishlist',
-            'action' => 'add_to_wishlist',
-            'product_id' => $product_id
-        ]);
-        $check_stmt->close();
+
+        $update_sql = "UPDATE cart SET qty = qty + ?, updated_at = NOW() WHERE user_id = ? AND product_id = ? AND variant_id = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param("iiii", $quantity, $user_id, $product_id, $variant_id);
+
+        if ($update_stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Product quantity updated in cart']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error updating cart']);
+        }
         return;
-    }
-    $check_stmt->close();
-
-    // Add to wishlist
-    $sql = "INSERT INTO wishlist (user_id, product_id, created_at) VALUES (?, ?, NOW())";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $user_id, $product_id);
-
-    if ($stmt->execute()) {
-        echo json_encode([
-            'success' => 'Product added to wishlist successfully',
-            'action' => 'add_to_wishlist',
-            'product_id' => $product_id
-        ]);
     } else {
-        echo json_encode(['error' => 'Failed to add product to wishlist: ' . $conn->error]);
-    }
 
-    $stmt->close();
-}
+        // Step 1: Fetch price based on variant or product
+        if (!empty($variant_id)) {
+            $price_query = "SELECT discount_price FROM product_variants WHERE id = ?";
+            $stmt_price = $conn->prepare($price_query);
+            $stmt_price->bind_param("i", $variant_id);
+        } else {
+            $price_query = "SELECT discount_price FROM products WHERE id = ?";
+            $stmt_price = $conn->prepare($price_query);
+            $stmt_price->bind_param("i", $product_id);
+        }
 
-// Function to remove product from wishlist
-function removeFromWishlist($conn, $user_id, $product_id)
-{
-    $sql = "DELETE FROM wishlist WHERE user_id = ? AND product_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $user_id, $product_id);
+        $stmt_price->execute();
+        $stmt_price->bind_result($price);
+        $stmt_price->fetch();
+        $stmt_price->close();
 
-    if ($stmt->execute()) {
-        if ($stmt->affected_rows > 0) {
+        if (!isset($price)) {
             echo json_encode([
-                'success' => 'Product removed from wishlist successfully',
-                'action' => 'remove_from_wishlist',
-                'product_id' => $product_id
+                'success' => true,
+                'message' => 'Price not found for this product.'
+            ]);
+            echo json_encode(['success' => false, 'message' => '']);
+            return;
+        }
+
+        // Step 2: Insert into cart with price
+        $sql = "INSERT INTO cart (user_id, product_id, variant_id, qty, price, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE 
+                qty = qty + VALUES(qty),
+                price = VALUES(price),
+                updated_at = NOW()";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("iiiid", $user_id, $product_id, $variant_id, $quantity, $price);
+
+
+        if ($stmt->execute()) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Product added to cart!'
             ]);
         } else {
-            echo json_encode(['error' => 'Product not found in wishlist']);
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $stmt->error]);
         }
-    } else {
-        echo json_encode(['error' => 'Failed to remove product from wishlist: ' . $conn->error]);
-    }
 
-    $stmt->close();
+
+        $stmt->close();
+    }
 }
+
+
 
 // Function to move product from wishlist to cart
 function moveWishlistToCart($conn, $user_id, $product_id, $quantity)
@@ -215,13 +195,13 @@ function moveWishlistToCart($conn, $user_id, $product_id, $quantity)
     }
 }
 
-// Function to get user's wishlist
-function getWishlist($conn, $user_id)
+// Function to get user's cart
+function getCart($conn, $user_id)
 {
-    $sql = "SELECT w.product_id, w.created_at, p.name, p.price, p.image_url 
-            FROM wishlist w 
-            LEFT JOIN products p ON w.product_id = p.id 
-            WHERE w.user_id = ? 
+    $sql = "SELECT c.product_id, c.quantity, p.name, p.price, p.image_url 
+            FROM cart c 
+            LEFT JOIN products p ON c.product_id = p.id 
+            WHERE c.user_id = ? 
             ORDER BY w.created_at DESC";
 
     $stmt = $conn->prepare($sql);

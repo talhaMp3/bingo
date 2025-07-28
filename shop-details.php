@@ -470,7 +470,7 @@ include_once './layout/header.php';
                             <div class="d-grid gap-lg-4 gap-2 mb-3">
                                 <span class="text-h6">QUANTITY:</span>
                                 <div class="d-flex align-items-center gap-2">
-                                    <!-- select product quantity -->
+
                                     <div
                                         class="quantity d-flex align-items-center py-3 px-lg-5 px-3 border border-n100-1">
                                         <button class="quantityDecrement text-n100"><i
@@ -480,7 +480,9 @@ include_once './layout/header.php';
                                                 class="ph ph-plus"></i></button>
                                     </div>
                                     <button
-                                        class="text-sm fw-bold text-n100 bg-n20 hover-text-n0 hover-bg-n100 py-3 px-lg-5 px-3 border border-n100 w-100">
+                                        class="text-sm fw-bold text-n100 bg-n20 hover-text-n0 hover-bg-n100 py-3 px-lg-5 px-3 border border-n100 w-100 addToCart"
+                                        data-product="<?php echo  $displayProduct['id'] ?>"
+                                        data-variant="<?php echo isset($displayProduct['variant_id']) ? $displayProduct['variant_id'] : ''; ?>">
                                         ADD TO CART
                                     </button>
                                 </div>

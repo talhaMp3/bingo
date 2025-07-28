@@ -102,7 +102,7 @@ include_once './layout/header.php';
 ?>
 
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <main class="pt-12">
 
     <!-- hero section start -->

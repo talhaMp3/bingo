@@ -193,7 +193,138 @@
         </div>
     </div>
 </section>
+
+
+<!-- <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="loginModalLabel">Login Required</h4>
+            </div>
+            <div class="modal-body">
+               
+                <form action="login.php" method="POST">
+                    <input type="email" name="email" class="form-control mb-2" placeholder="Email" required>
+                    <input type="password" name="password" class="form-control mb-2" placeholder="Password" required>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-2">
+                <div class="w-100 text-center">
+                    <h1 class="modal-title fs-4 fw-bold text-dark mb-0" id="loginModalLabel">
+                        <i class="fas fa-lock text-primary me-2"></i>
+                        Welcome Back
+                    </h1>
+                    <p class="text-muted small mb-0 mt-1">Please sign in to your account</p>
+                </div>
+                <button type="button" class="btn-close position-absolute top-0 end-0 mt-3 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body px-4 pb-4 row">
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="col-12 mb-lg-15 mb-md-10 mb-8 mx-auto">
+                        <div class="alert alert-danger mb-4">
+                            <?= $_SESSION['error'];
+                            unset($_SESSION['error']); ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="col-12 mb-lg-15 mb-md-10 mb-8 mx-auto">
+                        <div class="alert alert-success mb-4">
+                            <?= $_SESSION['success'];
+                            unset($_SESSION['success']); ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                <!-- Normal Login Form -->
+                <form method="POST" id="ajaxLoginForm" class="col-12 d-grid gap-lg-6 gap-4 mb-lg-3 mb-md-3 mb-6">
+                    <input type="hidden" name="action" value="ajax_login">
+
+                    <!-- Email -->
+                    <div class="d-grid gap-lg-4 gap-2">
+                        <label class="text-n100 font-noto-sans text-base fw-normal">Email</label>
+                        <input type="email" name="email"
+                            class="py-lg-4 py-2 px-lg-6 px-4 w-100 bg-n0 text-n100 radius-8 border border-n100-1 focus-secondary2"
+                            placeholder="Enter Your Email" required>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="d-grid gap-lg-4 gap-2">
+                        <label class="text-n100 font-noto-sans text-base fw-normal">Password</label>
+                        <div
+                            class="d-flex align-items-center py-lg-4 py-2 px-lg-6 px-4 w-100 bg-n0 text-n100 radius-8 border border-n100-1 focus-secondary2">
+                            <input type="password" name="password" class="w-100 border-0" placeholder="Enter Password" required>
+                            <button type="button" class="text-xl password-toggle">
+                                <i class="ph ph-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="checkbox" name="remember_me" id="remember_me" class="form-check-input">
+                            <label for="remember_me" class="text-n100 font-noto-sans text-sm">Remember Me</label>
+                        </div>
+                        <a href="forgot-password.php" class="text-secondary2 text-sm">Forgot Password?</a>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" class="btn-secondary py-lg-4 py-2 px-lg-6 px-4 radius-8 w-100">Login</button>
+                </form>
+                <div class="col-12">
+                    <ul class="d-center gap-3  ">
+                        <!-- <span class="d-block text-center text-n100">Or Sign in with</span> -->
+                        <li>
+                            <!-- Google Login -->
+                            <div id="g_id_signin" class="mt-3">
+                                <div id="g_id_onload"
+                                    data-client_id="29999697984-l7ihjbcmdnettkh5f9fhr78sskghe8qm.apps.googleusercontent.com"
+                                    data-context="signin"
+                                    data-ux_mode="popup"
+                                    data-login_uri="http://localhost:8000/google-login.php"
+                                    data-auto_prompt="false">
+                                </div>
+
+                                <div class="g_id_signin"
+                                    data-type="standard"
+                                    data-shape="pill"
+                                    data-theme="outline"
+                                    data-text="signin_with"
+                                    data-size="large"
+                                    data-logo_alignment="center">
+                                </div>
+                            </div>
+                        </li>
+
+                    </ul>
+                    <div class="text-center mb-lg-4 mb-2 mt-4">
+                        <span class="text-n50">Don't have an account?</span>
+                        <a href="register.php" class="text-secondary2 fw-medium">Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
 <!-- footer section end -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <?php if (isset($_SESSION['toast'])): ?>
@@ -210,6 +341,50 @@
     </script>
     <?php unset($_SESSION['toast']); ?>
 <?php endif; ?>
+<script>
+    $(document).ready(function() {
+        $('#ajaxLoginForm').submit(function(e) {
+            e.preventDefault();
+            const formData = $(this).serialize();
+
+            $.ajax({
+                url: 'functions/ajax-login.php',
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: response.message,
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.addEventListener('mouseenter', Swal.stopTimer);
+                                toast.addEventListener('mouseleave', Swal.resumeTimer);
+                            }
+                        });
+                        // location.href = response.redirect || window.location.href;
+                        $('#loginModal').modal('hide');
+                    } else {
+                        // Show error message in the modal
+                        $('#ajaxLoginForm').prepend(`
+                        <div class="alert alert-danger">${response.message}</div>
+                    `);
+                    }
+                },
+                error: function() {
+                    $('#ajaxLoginForm').prepend(`
+                    <div class="alert alert-danger">Something went wrong. Please try again.</div>
+                `);
+                }
+            });
+        });
+    });
+</script>
 
 <script>
     $(document).ready(function() {
@@ -228,6 +403,10 @@
                     $(button).addClass('btn-loading').html('<i class="fas fa-spinner fa-spin"></i> Adding...');
                 },
                 success: function(response) {
+                    if (response.login_required) {
+                        // Trigger login modal
+                        $('#loginModal').modal('show');
+                    }
                     if (response.success) {
                         $(button).removeClass('btn-outline-danger addToWishlist btn-loading')
                             .addClass('btn-danger removeFromWishlist')
@@ -292,6 +471,9 @@
                                     });
                                 } else {
                                     // On other pages - change button back
+                                    // .wishlist-item find this class and remove the element
+                                    const item = button.closest('.wishlist-item');
+                                    item.remove();
                                     button.removeClass('btn-danger removeFromWishlist btn-loading')
                                         .addClass('btn-outline-danger addToWishlist')
                                         .html('<i class="ph-heart ph-fill"></i>');
@@ -319,39 +501,57 @@
 
         // Clear entire wishlist
         $('#clearWishlist').click(function() {
-            if (confirm('Are you sure you want to clear your entire wishlist? This action cannot be undone.')) {
-                $.ajax({
-                    url: 'functions/whishlist.php',
-                    type: 'POST',
-                    data: {
-                        action: 'clear'
-                    },
-                    dataType: 'json',
-                    beforeSend: function() {
-                        $('#clearWishlist').addClass('btn-loading').html('<i class="fas fa-spinner fa-spin"></i> Clearing...');
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Your entire wishlist will be cleared. This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, clear it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: 'functions/whishlist.php',
+                        type: 'POST',
+                        data: {
+                            action: 'clear'
+                        },
+                        dataType: 'json',
+                        beforeSend: function() {
+                            $('#clearWishlist').addClass('btn-loading').html('<i class="fas fa-spinner fa-spin"></i> Clearing...');
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire(
+                                    'Cleared!',
+                                    'Your wishlist has been emptied.',
+                                    'success'
+                                ).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                $('#clearWishlist').removeClass('btn-loading').html('<i class="fas fa-trash"></i> Clear All');
+                                showToast('error', response.message);
+                            }
+                        },
+                        error: function() {
                             $('#clearWishlist').removeClass('btn-loading').html('<i class="fas fa-trash"></i> Clear All');
-                            showToast('error', response.message);
+                            showToast('error', 'An error occurred while clearing wishlist');
                         }
-                    },
-                    error: function() {
-                        $('#clearWishlist').removeClass('btn-loading').html('<i class="fas fa-trash"></i> Clear All');
-                        showToast('error', 'An error occurred while clearing wishlist');
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
+        
 
         // Placeholder: Add to cart button
-        $('.addToCart').click(function() {
-            var productId = $(this).data('product');
-            showToast('info', 'Add to cart functionality - implement your cart logic here');
-            console.log('Adding product ' + productId + ' to cart');
-        });
+        // $('.addToCart').click(function() {
+        //     var productId = $(this).data('product');
+        //     showToast('info', 'Add to cart functionality - implement your cart logic here');
+        //     console.log('Adding product ' + productId + ' to cart');
+        // });
     });
 
     // Update wishlist count
@@ -387,7 +587,68 @@
             }, 500);
         }
     }
+    $(document).ready(function() {
+        // Quantity Buttons
+        $('.quantity').each(function() {
+            const $wrapper = $(this);
+            const $input = $wrapper.find('.quantityValue');
 
+            $wrapper.find('.quantityDecrement').on('click', function() {
+                let value = parseInt($input.val()) || 1;
+                $input.val(Math.max(1, value - 1));
+            });
+
+            $wrapper.find('.quantityIncrement').on('click', function() {
+                let value = parseInt($input.val()) || 1;
+                $input.val(value + 1);
+            });
+        });
+
+        // Add to Cart
+        $('.addToCart').on('click', function() {
+            const $btn = $(this);
+            const productId = $btn.data('product');
+            const variantId = $btn.data('variant') || null;
+            const $quantityInput = $btn.closest('.d-flex').find('.quantityValue');
+            const quantity = parseInt($quantityInput.val()) || 1;
+
+            // Disable button temporarily
+            $btn.prop('disabled', true).text('Adding...');
+
+            $.ajax({
+                url: 'functions/cart.php',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'add_to_cart',
+                    product_id: productId,
+                    variant_id: variantId,
+                    quantity: quantity
+                },
+                success: function(data) {
+                    if (data.login_required) {
+                        $('#loginModal').modal({
+                            backdrop: 'static',
+                            keyboard: false
+                        }).modal('show');
+                    } else if (data.success) {
+                        // You can replace this with a toast/snackbar
+                        // alert('✅ ' + data.message);
+                        showToast('success', data.message);
+                    } else {
+                        showToast('error', data.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log(error);
+                    showToast('error', '🚨 Something went wrong. Please try again.');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('ADD TO CART');
+                }
+            });
+        });
+    });
     // SweetAlert Toast Message
     function showToast(type, message) {
         Swal.fire({

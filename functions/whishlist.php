@@ -3,13 +3,12 @@ session_start();
 include_once '../include/connection.php';
 // Check if user is logged in
 $user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
+
 if (!isset($user_id) || empty($user_id)) {
-    // if (isset($_POST['action']) || isset($_GET['action'])) {
-    echo json_encode(['success' => false, 'message' => 'Please login to manage wishlist']);
+    // echo json_encode(['success' => false, 'message' => 'Please login to manage wishlist']);
+    echo json_encode(['success' => false, 'login_required' => true, 'message' => 'Please login to manage wishlist']);
+
     exit;
-    // }
-    // header('Location: login.php');
-    // exit;
 }
 
 

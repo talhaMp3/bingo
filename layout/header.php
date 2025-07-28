@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+<?php
+$base_url = "http://localhost/bingo/";
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    $base_url = "https://" . $_SERVER['HTTP_HOST'] . "/bingo/";
+}
+?>
 
 <head>
     <meta http-equiv="content-type" content="text/html;charset=utf-8" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base href="./" />
     <meta
         name="description"
         content="CycleCity offers a wide range of bicycles, gear, and accessories for every type of cyclist. Explore our collection and gear up for your next adventure!" />
@@ -19,7 +26,7 @@
     <meta
         property="og:description"
         content="Discover the best selection of bicycles, gear, and accessories at CycleCity. Shop now for top brands and quality service." />
-    <meta property="og:image" content="assets/images/logo.png" />
+    <meta property="og:image" content="/assets/images/logo.png" />
     <meta property="og:url" content="" />
     <meta property="og:type" content="website" />
 
@@ -30,19 +37,16 @@
     <meta
         name="twitter:description"
         content="Explore the latest in bicycles, cycling gear, and accessories at CycleCity. Gear up for your next adventure!" />
-    <meta name="twitter:image" content="assets/images/logo.png" />
+    <meta name="twitter:image" content="/assets/images/logo.png" />
     <meta name="twitter:site" content="@CycleCity" />
 
     <title>
         CycleCity | Your Hub for Quality Bicycles, Gear, and Accessories
     </title>
-    <link
-        rel="shortcut icon"
-        href="assets/images/favicon.png"
-        type="image/x-icon" />
+    <link rel="shortcut icon" href="//assets/images/favicon.png" type="image/x-icon" />
 
-    <script defer src="assets/js/main.js"></script>
-    <link href="assets/css/style.css" rel="stylesheet" />
+    <script defer src="/assets/js/main.js"></script>
+    <link href="/assets/css/style.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -163,7 +167,7 @@
                                 <div class="custom-select">
                                     <span class="selected-option fw-medium text-n0">
                                         <img
-                                            src="assets/images/flags/ac.png"
+                                            src="<?= $base_url ?>assets/images/flags/ac.png"
                                             alt="language"
                                             class="option-flag" />
                                         AC
@@ -171,35 +175,35 @@
                                     <ul class="options-list">
                                         <li data-value="ac">
                                             <img
-                                                src="assets/images/flags/ac.png"
+                                                src="<?= $base_url ?>assets/images/flags/ac.png"
                                                 alt="language"
                                                 class="option-flag" />
                                             AC
                                         </li>
                                         <li data-value="ad">
                                             <img
-                                                src="assets/images/flags/ad.png"
+                                                src="<?= $base_url ?>assets/images/flags/ad.png"
                                                 alt="language"
                                                 class="option-flag" />
                                             AD
                                         </li>
                                         <li data-value="az">
                                             <img
-                                                src="assets/images/flags/az.png"
+                                                src="<?= $base_url ?>assets/images/flags/az.png"
                                                 alt="language"
                                                 class="option-flag" />
                                             AZ
                                         </li>
                                         <li data-value="ba">
                                             <img
-                                                src="assets/images/flags/ba.png"
+                                                src="<?= $base_url ?>assets/images/flags/ba.png"
                                                 alt="language"
                                                 class="option-flag" />
                                             BA
                                         </li>
                                         <li data-value="bq">
                                             <img
-                                                src="assets/images/flags/bq.png"
+                                                src="<?= $base_url ?>assets/images/flags/bq.png"
                                                 alt="language"
                                                 class="option-flag" />
                                             BQ
@@ -240,11 +244,11 @@
                             <a href="index.html">
                                 <img
                                     class="w-100 d-block d-sm-none"
-                                    src="assets/images/favicon.png"
+                                    src="<?= $base_url ?>assets/images/favicon.png"
                                     alt="logo" />
                                 <img
                                     class="w-100 d-none d-sm-block"
-                                    src="assets/images/logo.png"
+                                    src="<?= $base_url ?>assets/images/logo.png"
                                     alt="logo" />
                             </a>
                         </div>
@@ -323,7 +327,7 @@
                                                                         class="menu-item-thumb icon-48px radius-unset d-none d-lg-block mb-3 overflow-hidden">
                                                                         <img
                                                                             class="w-100"
-                                                                            src="assets/images/bikes.png"
+                                                                            src="<?= $base_url ?>/assets/images/bikes.png"
                                                                             alt="mega menu" />
                                                                     </div>
                                                                     <span
@@ -366,7 +370,7 @@
                                                                         class="menu-item-thumb icon-48px radius-unset d-none d-lg-block mb-3 overflow-hidden">
                                                                         <img
                                                                             class="w-100"
-                                                                            src="assets/images/accessories.png"
+                                                                            src="<?= $base_url ?>/assets/images/accessories.png"
                                                                             alt="mega menu" />
                                                                     </div>
                                                                     <span
@@ -421,7 +425,7 @@
                                                                         class="menu-item-thumb icon-48px radius-unset d-none d-lg-block mb-3 overflow-hidden">
                                                                         <img
                                                                             class="w-100"
-                                                                            src="assets/images/parts.png"
+                                                                            src="<?= $base_url ?>/assets/images/parts.png"
                                                                             alt="mega menu" />
                                                                     </div>
                                                                     <span
@@ -464,7 +468,7 @@
                                                                         class="menu-item-thumb icon-48px radius-unset d-none d-lg-block mb-3 overflow-hidden">
                                                                         <img
                                                                             class="w-100"
-                                                                            src="assets/images/gear.png"
+                                                                            src="<?= $base_url ?>/assets/images/gear.png"
                                                                             alt="mega menu" />
                                                                     </div>
                                                                     <span
@@ -507,7 +511,7 @@
                                                                         class="menu-item-thumb icon-48px radius-unset d-none d-lg-block mb-3 overflow-hidden">
                                                                         <img
                                                                             class="w-100"
-                                                                            src="assets/images/electronics.png"
+                                                                            src="<?= $base_url ?>/assets/images/electronics.png"
                                                                             alt="mega menu" />
                                                                     </div>
                                                                     <span
@@ -554,7 +558,7 @@
                                                                 class="card-thumb mb-3xl-6 mb-xl-4 mb-lg-3">
                                                                 <img
                                                                     class="w-100"
-                                                                    src="assets/images/product-thumb-1.png"
+                                                                    src="<?= $base_url ?>/assets/images/product-thumb-1.png"
                                                                     alt="product thumb" />
                                                             </div>
                                                             <a
@@ -606,7 +610,7 @@
                                                                 class="card-thumb mb-3xl-6 mb-xl-4 mb-lg-3">
                                                                 <img
                                                                     class="w-100"
-                                                                    src="assets/images/product-thumb-2.png"
+                                                                    src="<?= $base_url ?>/assets/images/product-thumb-2.png"
                                                                     alt="product thumb" />
                                                             </div>
                                                             <a
@@ -886,7 +890,7 @@
                                     <div class="cart-item-thumb">
                                         <img
                                             class="w-100"
-                                            src="assets/images/review-img-1.png"
+                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
                                             alt="cart item" />
                                     </div>
                                     <div class="cart-item-info">
@@ -926,7 +930,7 @@
                                     <div class="cart-item-thumb">
                                         <img
                                             class="w-100"
-                                            src="assets/images/review-img-1.png"
+                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
                                             alt="cart item" />
                                     </div>
                                     <div class="cart-item-info">
@@ -966,7 +970,7 @@
                                     <div class="cart-item-thumb">
                                         <img
                                             class="w-100"
-                                            src="assets/images/review-img-1.png"
+                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
                                             alt="cart item" />
                                     </div>
                                     <div class="cart-item-info">
@@ -1006,7 +1010,7 @@
                                     <div class="cart-item-thumb">
                                         <img
                                             class="w-100"
-                                            src="assets/images/review-img-1.png"
+                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
                                             alt="cart item" />
                                     </div>
                                     <div class="cart-item-info">
@@ -1161,7 +1165,7 @@
             </button>
 
             <div class="newsletter-banner d-none d-lg-block">
-                <img class="w-100" src="assets/images/newsletter.png" alt="banner" />
+                <img class="w-100" src="<?= $base_url ?>/assets/images/newsletter.png" alt="banner" />
             </div>
             <div
                 class="newsletter-form-wrapper text-center p-xxl-10 p-xl-8 p-lg-6 p-4">
