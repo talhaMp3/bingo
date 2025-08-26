@@ -157,7 +157,7 @@ include_once './layout/header.php';
 ?>
 <style>
     .variant-active {
-        border: 2px solid #000000ff;
+        border: 2px solid rgba(0, 0, 0, 0.57) !important;
     }
 </style>
 

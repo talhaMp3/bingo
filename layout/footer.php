@@ -282,12 +282,47 @@
                     <!-- Submit -->
                     <button type="submit" class="btn-secondary py-lg-4 py-2 px-lg-6 px-4 radius-8 w-100">Login</button>
                 </form>
+                <style>
+                    /* Custom Google Sign-in Button Styles */
+                    .custom-google-btn {
+                        width: 100% !important;
+                    }
+
+                    /* Override Google's default button styling */
+                    .custom-google-btn iframe,
+                    .custom-google-btn div[role="button"] {
+                        width: 100% !important;
+                        min-width: 100% !important;
+                        max-width: 100% !important;
+                        border-radius: 8px !important;
+                        /* Square corners, adjust as needed */
+                        height: 50px !important;
+                    }
+
+                    /* Additional styling for the container */
+                    #g_id_signin {
+                        width: 100%;
+                    }
+
+                    .g_id_signin {
+                        width: 100% !important;
+                        display: block !important;
+                    }
+
+                    /* If you want perfectly square button */
+                    .square-btn .custom-google-btn iframe,
+                    .square-btn .custom-google-btn div[role="button"] {
+                        height: 60px !important;
+                        /* Adjust height to make it square-ish */
+                        border-radius: 4px !important;
+                        /* More square appearance */
+                    }
+                </style>
                 <div class="col-12">
-                    <ul class="d-center gap-3  ">
-                        <!-- <span class="d-block text-center text-n100">Or Sign in with</span> -->
-                        <li>
+                    <ul class="d-center gap-3 ">
+                        <li class="w-100">
                             <!-- Google Login -->
-                            <div id="g_id_signin" class="mt-3">
+                            <div id="g_id_signin" class="mt-3 w-100">
                                 <div id="g_id_onload"
                                     data-client_id="29999697984-l7ihjbcmdnettkh5f9fhr78sskghe8qm.apps.googleusercontent.com"
                                     data-context="signin"
@@ -298,21 +333,23 @@
 
                                 <div class="g_id_signin"
                                     data-type="standard"
-                                    data-shape="pill"
+                                    data-shape="rectangular"
                                     data-theme="outline"
                                     data-text="signin_with"
                                     data-size="large"
-                                    data-logo_alignment="center">
+                                    data-logo_alignment="center"
+                                    data-width="100%">
                                 </div>
                             </div>
                         </li>
-
                     </ul>
                     <div class="text-center mb-lg-4 mb-2 mt-4">
                         <span class="text-n50">Don't have an account?</span>
                         <a href="register.php" class="text-secondary2 fw-medium">Register</a>
                     </div>
                 </div>
+
+
             </div>
         </div>
     </div>
@@ -544,7 +581,7 @@
                 }
             });
         });
-        
+
 
         // Placeholder: Add to cart button
         // $('.addToCart').click(function() {
@@ -683,6 +720,39 @@
             }
         });
     };
+
+    // Add to Cart
+    $('.fetch-cart-btn').on('click', function() {
+        $.ajax({
+            url: './functions/cart.php',
+            type: 'POST',
+            data: {
+                action: 'get_cart',
+            },
+            dataType: 'json',
+            success: function(data) {
+                if (data.login_required) {
+                    $('#loginModal').modal({
+                        backdrop: 'static',
+                        keyboard: false
+                    }).modal('show');
+                } else if (data.success) {
+                    // You can replace this with a toast/snackbar
+                    // alert('✅ ' + data.message);
+                    showToast('success', data.message);
+                } else {
+                    showToast('error', data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log(error);
+                showToast('error', '🚨 Something went wrong. Please try again.');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).text('ADD TO CART');
+            }
+        });
+    });
 </script>
 </body>
 

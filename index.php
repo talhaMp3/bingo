@@ -3,23 +3,6 @@ session_start();
 include_once './include/connection.php';
 include_once './layout/header.php';
 
-// $products_query = "SELECT * FROM products WHERE status = 'active' ORDER BY name ASC";
-// $products_query = "
-// SELECT 
-//     products.*, 
-//     categories.name AS category_name, 
-//     categories.slug AS category_slug
-// FROM 
-//     products
-// JOIN 
-//     categories ON products.category_id = categories.id
-// WHERE 
-//     products.status = 'active'
-// ORDER BY 
-//     products.name ASC";
-
-// $products_result = mysqli_query($conn, $products_query);
-
 $user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
 
 $products_query = "

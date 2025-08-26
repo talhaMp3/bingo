@@ -183,9 +183,9 @@ include_once './layout/header.php';
                         <!-- Social Login Options -->
                         <ul class="d-center gap-3 mt-lg-8 mt-6 ">
                             <!-- <span class="d-block text-center text-n100">Or Sign in with</span> -->
-                            <li>
+                            <li class="w-100">
                                 <!-- Google Login -->
-                                <div id="g_id_signin" class="mt-3">
+                                <!-- <div id="g_id_signin" class="mt-3">
                                     <div id="g_id_onload"
                                         data-client_id="29999697984-l7ihjbcmdnettkh5f9fhr78sskghe8qm.apps.googleusercontent.com"
                                         data-context="signin"
@@ -201,6 +201,25 @@ include_once './layout/header.php';
                                         data-text="signin_with"
                                         data-size="large"
                                         data-logo_alignment="center">
+                                    </div>
+                                </div> -->
+                                <div id="g_id_signin" class="mt-3 w-100">
+                                    <div id="g_id_onload"
+                                        data-client_id="29999697984-l7ihjbcmdnettkh5f9fhr78sskghe8qm.apps.googleusercontent.com"
+                                        data-context="signin"
+                                        data-ux_mode="popup"
+                                        data-login_uri="http://localhost:8000/google-login.php"
+                                        data-auto_prompt="false">
+                                    </div>
+
+                                    <div class="g_id_signin"
+                                        data-type="standard"
+                                        data-shape="rectangular"
+                                        data-theme="outline"
+                                        data-text="signin_with"
+                                        data-size="large"
+                                        data-logo_alignment="center"
+                                        data-width="100%">
                                     </div>
                                 </div>
                             </li>

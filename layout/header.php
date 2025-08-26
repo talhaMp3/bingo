@@ -12,41 +12,27 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <base href="./" />
-    <meta
-        name="description"
-        content="CycleCity offers a wide range of bicycles, gear, and accessories for every type of cyclist. Explore our collection and gear up for your next adventure!" />
-    <meta
-        name="keywords"
-        content="bicycles, bikes, cycling gear, bike accessories, mountain bikes, road bikes, CycleCity" />
+    <meta name="description" content="CycleCity offers a wide range of bicycles, gear, and accessories for every type of cyclist. Explore our collection and gear up for your next adventure!" />
+    <meta name="keywords" content="bicycles, bikes, cycling gear, bike accessories, mountain bikes, road bikes, CycleCity" />
     <meta name="author" content="CycleCity Team" />
 
-    <meta
-        property="og:title"
-        content="CycleCity | Quality Bicycles and Cycling Gear" />
-    <meta
-        property="og:description"
-        content="Discover the best selection of bicycles, gear, and accessories at CycleCity. Shop now for top brands and quality service." />
+    <meta property="og:title" content="CycleCity | Quality Bicycles and Cycling Gear" />
+    <meta property="og:description" content="Discover the best selection of bicycles, gear, and accessories at CycleCity. Shop now for top brands and quality service." />
     <meta property="og:image" content="/assets/images/logo.png" />
     <meta property="og:url" content="" />
     <meta property="og:type" content="website" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta
-        name="twitter:title"
-        content="CycleCity | Quality Bicycles and Cycling Gear" />
-    <meta
-        name="twitter:description"
-        content="Explore the latest in bicycles, cycling gear, and accessories at CycleCity. Gear up for your next adventure!" />
+    <meta name="twitter:title" content="CycleCity | Quality Bicycles and Cycling Gear" />
+    <meta name="twitter:description" content="Explore the latest in bicycles, cycling gear, and accessories at CycleCity. Gear up for your next adventure!" />
     <meta name="twitter:image" content="/assets/images/logo.png" />
     <meta name="twitter:site" content="@CycleCity" />
-
-    <title>
-        CycleCity | Your Hub for Quality Bicycles, Gear, and Accessories
-    </title>
-    <link rel="shortcut icon" href="//assets/images/favicon.png" type="image/x-icon" />
+    <title>CycleCity | Your Hub for Quality Bicycles, Gear, and Accessories</title>
+    <link rel="shortcut icon" href="/assets/images/favicon.png" type="image/x-icon" />
 
     <script defer src="/assets/js/main.js"></script>
     <link href="/assets/css/style.css" rel="stylesheet" />
+    <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=68875bd39b73432f18d61440&product=sop' async='async'></script>
 </head>
 
 <body>
@@ -154,9 +140,7 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                                     1200 Main St. Santa Rosa, CA 93541, USA
                                 </span>
                             </a>
-                            <a
-                                href="tel:+1234567890"
-                                class="d-flex align-items-center gap-2 text-n0 hover-text-secondary2">
+                            <a href="tel:+1234567890" class="d-flex align-items-center gap-2 text-n0 hover-text-secondary2">
                                 <span class="text-base"><i class="ph ph-phone-call"></i></span>
                                 <span class="text-sm text-nowrap"> +123 456 7890 </span>
                             </a>
@@ -166,66 +150,25 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                                 <!-- selected item  -->
                                 <div class="custom-select">
                                     <span class="selected-option fw-medium text-n0">
-                                        <img
-                                            src="<?= $base_url ?>assets/images/flags/ac.png"
-                                            alt="language"
-                                            class="option-flag" />
+                                        <img src="<?= $base_url ?>assets/images/flags/ac.png" alt="language" class="option-flag" />
                                         AC
                                     </span>
                                     <ul class="options-list">
-                                        <li data-value="ac">
-                                            <img
-                                                src="<?= $base_url ?>assets/images/flags/ac.png"
-                                                alt="language"
-                                                class="option-flag" />
-                                            AC
-                                        </li>
-                                        <li data-value="ad">
-                                            <img
-                                                src="<?= $base_url ?>assets/images/flags/ad.png"
-                                                alt="language"
-                                                class="option-flag" />
-                                            AD
-                                        </li>
-                                        <li data-value="az">
-                                            <img
-                                                src="<?= $base_url ?>assets/images/flags/az.png"
-                                                alt="language"
-                                                class="option-flag" />
-                                            AZ
-                                        </li>
-                                        <li data-value="ba">
-                                            <img
-                                                src="<?= $base_url ?>assets/images/flags/ba.png"
-                                                alt="language"
-                                                class="option-flag" />
-                                            BA
-                                        </li>
-                                        <li data-value="bq">
-                                            <img
-                                                src="<?= $base_url ?>assets/images/flags/bq.png"
-                                                alt="language"
-                                                class="option-flag" />
-                                            BQ
-                                        </li>
+                                        <li data-value="ac"><img src="<?= $base_url ?>assets/images/flags/ac.png" alt="language" class="option-flag" /> AC </li>
+                                        <li data-value="ad"><img src="<?= $base_url ?>assets/images/flags/ad.png" alt="language" class="option-flag" /> AD </li>
+                                        <li data-value="az"><img src="<?= $base_url ?>assets/images/flags/az.png" alt="language" class="option-flag" /> AZ </li>
+                                        <li data-value="ba"><img src="<?= $base_url ?>assets/images/flags/ba.png" alt="language" class="option-flag" /> BA </li>
+                                        <li data-value="bq"><img src="<?= $base_url ?>assets/images/flags/bq.png" alt="language" class="option-flag" /> BQ </li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="text-sm text-nowrap fw-medium text-n0">Follow Us:</span>
                                 <ul class="d-flex align-items-center gap-4">
-                                    <li>
-                                        <a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-facebook-logo"></i></a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-x-logo"></i></a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-dribbble-logo"></i></a>
-                                    </li>
-                                    <li>
-                                        <a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-instagram-logo"></i></a>
-                                    </li>
+                                    <li><a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-facebook-logo"></i></a></li>
+                                    <li><a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-x-logo"></i></a></li>
+                                    <li><a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-dribbble-logo"></i></a></li>
+                                    <li><a href="#" class="text-n0 text-xl hover-text-secondary2"><i class="ph ph-instagram-logo"></i></a></li>
                                 </ul>
                             </div>
                         </div>
@@ -242,14 +185,8 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                         class="d-flex align-items-center justify-content-between gap-4xl-10 gap-3xl-8 gap-xxl-6 gap-4 px-lg-0 px-sm-4 py-lg-5 py-3">
                         <div class="logo">
                             <a href="index.html">
-                                <img
-                                    class="w-100 d-block d-sm-none"
-                                    src="<?= $base_url ?>assets/images/favicon.png"
-                                    alt="logo" />
-                                <img
-                                    class="w-100 d-none d-sm-block"
-                                    src="<?= $base_url ?>assets/images/logo.png"
-                                    alt="logo" />
+                                <img class="w-100 d-block d-sm-none" src="<?= $base_url ?>assets/images/favicon.png" alt="logo" />
+                                <img class="w-100 d-none d-sm-block" src="<?= $base_url ?>assets/images/logo.png" alt="logo" />
                             </a>
                         </div>
                         <nav class="navbar-area">
@@ -260,12 +197,9 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                                 </span>
                             </button>
 
-                            <ul
-                                class="nav-menu-items d-lg-flex d-grid align-items-lg-center gap-lg-0 gap-lg-4 gap-1">
+                            <ul class="nav-menu-items d-lg-flex d-grid align-items-lg-center gap-lg-0 gap-lg-4 gap-1">
                                 <li class="menu-item">
-                                    <button class="slide-vertical" data-splitting>
-                                        Home
-                                        <span class="menu-icon"><i class="ph-fill ph-caret-down"></i></span>
+                                    <button class="slide-vertical" data-splitting> Home <span class="menu-icon"><i class="ph-fill ph-caret-down"></i></span>
                                     </button>
                                     <ul class="sub-menu">
                                         <li class="menu-link">
@@ -826,10 +760,16 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                                     <i class="ph ph-heart"></i>
                                 </span>
                             </a>
+                            <?php
+                            if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != '') {
 
+                                $cartBtClass = "fetch-cart-btn cart-btn";
+                            } else {
+                                $cartBtClass = "fetch-cart-btn";
+                            }
+                            ?>
                             <!-- cart btn -->
-                            <button
-                                class="cart-btn icon-36px position-relative text-n100 hover-text-secondary2">
+                            <button class="<?= $cartBtClass ?> icon-36px position-relative text-n100 hover-text-secondary2">
                                 <span
                                     class="badge radius-pill text-n0 text-sm fw-medium bg-secondary2 position-absolute top-50 start-100 translate-middle z-1 mt-n3">0</span>
                                 <span class="text-2xl">
