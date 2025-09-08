@@ -4,6 +4,7 @@
         "phpmailer/phpmailer": "^6.10",
         "razorpay/razorpay": "^2.9",
         "filp/whoops": "^2.18",
-        "vlucas/phpdotenv": "^5.6"
+        "vlucas/phpdotenv": "^5.6",
+        "sonata-project/google-authenticator": "^2.3"
     }
 }

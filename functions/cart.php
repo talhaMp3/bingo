@@ -10,6 +10,7 @@ $quantity = intval($_POST['quantity'] ?? 1);
 $action = $_POST['action'] ?? 'add_to_cart';
 $user_id = $_SESSION['user_id'] ?? null;
 
+
 // Check login
 if (!$user_id) {
     echo json_encode([
@@ -21,13 +22,13 @@ if (!$user_id) {
 }
 
 // Validate product
-if ($product_id <= 0 || $quantity <= 0) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Invalid product or quantity.'
-    ]);
-    exit;
-}
+// if ($product_id <= 0 || $quantity <= 0) {
+//     echo json_encode([
+//         'success' => false,
+//         'message' => 'Invalid product or quantity.'
+//     ]);
+//     exit;
+// }
 
 // Handle actions
 switch ($action) {
@@ -198,31 +199,48 @@ function moveWishlistToCart($conn, $user_id, $product_id, $quantity)
 // Function to get user's cart
 function getCart($conn, $user_id)
 {
-    $sql = "SELECT c.product_id, c.quantity, p.name, p.price, p.image_url 
-            FROM cart c 
-            LEFT JOIN products p ON c.product_id = p.id 
-            WHERE c.user_id = ? 
-            ORDER BY w.created_at DESC";
+
+
+    // $sql = "SELECT c.product_id, c.qty, p.name, p.discount_price, p.image 
+    //         FROM cart c 
+    //         LEFT JOIN products p ON c.product_id = p.id 
+    //         WHERE c.user_id = ? 
+    //         ORDER BY c.created_at DESC";
+    $sql = "SELECT 
+                c.id as cart_id,
+                c.product_id,
+                c.variant_id,
+                c.qty,
+                COALESCE(v.variant_name, p.name) as name,
+                COALESCE(v.discount_price, p.discount_price) as discount_price,
+                COALESCE(v.image, p.image) as image,
+                p.name as product_name,
+                v.variant_name
+            FROM cart c
+            LEFT JOIN products p ON c.product_id = p.id
+            LEFT JOIN product_variants v ON c.variant_id = v.id
+            WHERE c.user_id = ?
+            ORDER BY c.created_at DESC";
 
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
 
     if ($stmt->execute()) {
         $result = $stmt->get_result();
-        $wishlist = [];
+        $cart = [];
 
         while ($row = $result->fetch_assoc()) {
-            $wishlist[] = $row;
+            $cart[] = $row;
         }
 
         echo json_encode([
-            'success' => 'Wishlist retrieved successfully',
-            'action' => 'get_wishlist',
-            'wishlist' => $wishlist,
-            'count' => count($wishlist)
+            'success' => 'cart retrieved successfully',
+            'action' => 'get_cart',
+            'cart' => $cart,
+            'count' => count($cart)
         ]);
     } else {
-        echo json_encode(['error' => 'Failed to retrieve wishlist: ' . $conn->error]);
+        echo json_encode(['error' => 'Failed to retrieve cart: ' . $conn->error]);
     }
 
     $stmt->close();

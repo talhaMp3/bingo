@@ -737,19 +737,56 @@
                         keyboard: false
                     }).modal('show');
                 } else if (data.success) {
-                    // You can replace this with a toast/snackbar
-                    // alert('✅ ' + data.message);
-                    showToast('success', data.message);
+                    // Target wrapper
+                    let $wrapper = $(".cart-items");
+                    $wrapper.empty(); // clear old items
+
+                    // Loop cart items
+                    data.cart.forEach(function(item) {
+                        // decode image JSON
+                        let images = JSON.parse(item.image);
+                        let firstImage = images[0]; // just show the first one for now
+
+                        let html = `
+                <div class="cart-item d-flex justify-content-between gap-4">
+                    <div class="d-flex align-items-center gap-4">
+                        <div class="cart-item-thumb">
+                            <img class="w-100" src="assets/images/${firstImage}" alt="cart item" />
+                        </div>
+                        <div class="cart-item-info">
+                            <span class="d-block text-n100 text-base fw-medium">${item.name}</span>
+                            <span class="d-block text-n100 text-sm">Qty: ${item.qty}</span>
+                            <span class="d-block text-secondary2 text-base my-lg-2 my-1">₹${item.discount_price}</span>
+                            <div class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
+                                <button class="quantityDecrement text-n100"><i class="ph ph-minus"></i></button>
+                                <input type="text" value="${item.qty}" class="quantityValue border-0 p-0 outline-0 bg-n20" />
+                                <button class="quantityIncrement text-n100"><i class="ph ph-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
+                        <button class="cart-item-remove text-xl" data-id="${item.product_id}">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                        <button class="cart-item-edit text-xl">
+                            <i class="ph ph-pencil-simple-line"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+                        $wrapper.append(html);
+                    });
                 } else {
                     showToast('error', data.message);
                 }
             },
             error: function(xhr, status, error) {
-                console.log(error);
+                // console.log(error);
                 showToast('error', '🚨 Something went wrong. Please try again.');
             },
             complete: function() {
-                $btn.prop('disabled', false).text('ADD TO CART');
+                // $btn.prop('disabled', false).text('ADD TO CART');
             }
         });
     });

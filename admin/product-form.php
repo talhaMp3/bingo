@@ -1,6 +1,5 @@
     <?php
     require_once '../include/connection.php';
-
     // Handle form submission
     if ($_POST) {
         // Handle image uploads
@@ -24,135 +23,157 @@
                     $upload_path = $upload_dir . $new_filename;
 
                     if (move_uploaded_file($file_tmp, $upload_path)) {
-                        $uploaded_images[] = 'asset/uploads/product/' . $new_filename;
-                        $uploaded_images[] =  $new_filename;
+                        // Store only the filename as shown in your database
+                        $uploaded_images[] = $new_filename;
                     }
                 }
             }
         }
 
-        // Convert images array to JSON
+        // Convert images array to JSON string (not JSON encode)
         $images_json = json_encode($uploaded_images);
 
-        // Handle video URLs
-        $video_urls = [];
+        // Handle video URLs - process URLs and convert to iframe format
+        $video_iframes = [];
         if (isset($_POST['video_urls']) && is_array($_POST['video_urls'])) {
             foreach ($_POST['video_urls'] as $url) {
                 if (!empty(trim($url))) {
-                    $video_urls[] = trim($url);
+                    $clean_url = trim($url);
+                    // Convert YouTube URLs to embed format
+                    if (strpos($clean_url, 'youtube.com/watch?v=') !== false) {
+                        $video_id = parse_url($clean_url, PHP_URL_QUERY);
+                        parse_str($video_id, $query_params);
+                        if (isset($query_params['v'])) {
+                            $embed_url = 'https://www.youtube.com/embed/' . $query_params['v'];
+                            $video_iframes[] = '<iframe src="' . $embed_url . '" frameborder="0" allowfullscreen></iframe>';
+                        }
+                    } elseif (strpos($clean_url, 'youtu.be/') !== false) {
+                        $video_id = substr(parse_url($clean_url, PHP_URL_PATH), 1);
+                        $embed_url = 'https://www.youtube.com/embed/' . $video_id;
+                        $video_iframes[] = '<iframe src="' . $embed_url . '" frameborder="0" allowfullscreen></iframe>';
+                    } else {
+                        // For other video URLs, create generic iframe
+                        $video_iframes[] = '<iframe src="' . $clean_url . '" frameborder="0" allowfullscreen></iframe>';
+                    }
                 }
             }
         }
-        $video_json = json_encode($video_urls);
+        $video_json = json_encode($video_iframes);
 
         // Basic product information
         $category_id = (int)$_POST['category_id'];
         $name = mysqli_real_escape_string($conn, $_POST['name']);
         $slug = mysqli_real_escape_string($conn, $_POST['slug']);
-        $sku = mysqli_real_escape_string($conn, $_POST['sku']);
-        $price = (float)$_POST['price'];
+        $sku = !empty($_POST['sku']) ? mysqli_real_escape_string($conn, $_POST['sku']) : 0; // Default to 0 if empty
+        $price = (int)$_POST['price']; // Store as integer (price in cents/smallest unit)
         $short_description = mysqli_real_escape_string($conn, $_POST['short_description']);
         $long_description = mysqli_real_escape_string($conn, $_POST['long_description']);
-        $discount_price = !empty($_POST['discount_price']) ? (float)$_POST['discount_price'] : 0;
+        $discount_price = !empty($_POST['discount_price']) ? (int)$_POST['discount_price'] : 0;
         $stock_quantity = (int)$_POST['stock_quantity'];
         $status = $_POST['status'];
 
-        // New fields
+        // Additional fields
         $brand_id = (int)$_POST['brand_id'];
         $tags = mysqli_real_escape_string($conn, $_POST['tags']);
-        $featured = isset($_POST['is_featured']) ? 1 : 0;
-        $stock_status = $_POST['stock_status'];
+        $is_featured = isset($_POST['is_featured']) ? 1 : 0;
 
         // SEO fields
         $meta_title = mysqli_real_escape_string($conn, $_POST['meta_title']);
         $meta_description = mysqli_real_escape_string($conn, $_POST['meta_description']);
 
-        // Handle specifications - convert array to JSON
+        // Handle specifications - format as JSON array with objects
         $specifications = [];
         if (isset($_POST['spec_names']) && isset($_POST['spec_values'])) {
             for ($i = 0; $i < count($_POST['spec_names']); $i++) {
                 if (!empty($_POST['spec_names'][$i]) && !empty($_POST['spec_values'][$i])) {
                     $specifications[] = [
-                        'name' => $_POST['spec_names'][$i],
-                        'value' => $_POST['spec_values'][$i]
+                        'name' => trim($_POST['spec_names'][$i]),
+                        'value' => trim($_POST['spec_values'][$i])
                     ];
                 }
             }
         }
-        $specifications_json = mysqli_real_escape_string($conn, json_encode($specifications));
+        // Format specifications as pretty JSON (like in your database example)
+        $specifications_json = mysqli_real_escape_string($conn, json_encode($specifications, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         // Timestamps
         $created_by = 1; // Assuming admin user ID is 1
         $updated_by = 1;
         $created_at = date('Y-m-d H:i:s');
-        $updated_at = time();
+        $updated_at = '0000-00-00 00:00:00'; // Match your database format
 
         // Insert product with all fields
         $product_query = "INSERT INTO products (
-        category_id, name, slug, sku, price, short_description, long_description, 
+        category_id, brand_id, name, slug, sku, price, short_description, long_description, 
         discount_price, stock_quantity, image, specifications, video, meta_title, 
-        meta_description, status, brand_id, tags, is_featured,created_by, updated_by, created_at, updated_at
+        meta_description, tags, is_featured, status, created_by, updated_by, created_at, updated_at
     ) VALUES (
-        '$category_id', '$name', '$slug', '$sku', '$price', '$short_description', 
+        '$category_id', '$brand_id', '$name', '$slug', '$sku', '$price', '$short_description', 
         '$long_description', '$discount_price', '$stock_quantity', '$images_json', 
-        '$specifications_json', '$video_json', '$meta_title', '$meta_description', '$status', 
-        '$brand_id', '$tags', '$featured',
-        '$created_by', '$updated_by', '$created_at', '$updated_at'
+        '$specifications_json', '$video_json', '$meta_title', '$meta_description', '$tags', 
+        '$is_featured', '$status', '$created_by', '$updated_by', '$created_at', '$updated_at'
     )";
-
 
         if (mysqli_query($conn, $product_query)) {
             $product_id = mysqli_insert_id($conn);
 
-if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
-    for ($i = 0; $i < count($_POST['variant_name']); $i++) {
-        if (!empty($_POST['variant_name'][$i])) {
-            $variant_name = mysqli_real_escape_string($conn, $_POST['variant_name'][$i]);
-            $variant_sku = mysqli_real_escape_string($conn, $_POST['variant_sku'][$i]);
-            $variant_price = (float)$_POST['variant_price'][$i];
-            $variant_discount_price = !empty($_POST['variant_discount_price'][$i]) ? (float)$_POST['variant_discount_price'][$i] : 0;
-            $variant_stock = (int)$_POST['variant_stock'][$i];
-            $variant_status = $_POST['variant_status'][$i];
+            // Handle product variants
+            if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
+                for ($i = 0; $i < count($_POST['variant_name']); $i++) {
+                    if (!empty($_POST['variant_name'][$i])) {
+                        $variant_name = mysqli_real_escape_string($conn, $_POST['variant_name'][$i]);
+                        $variant_sku = mysqli_real_escape_string($conn, $_POST['variant_sku'][$i]);
+                        $variant_price = (float)$_POST['variant_price'][$i];
+                        $variant_discount_price = !empty($_POST['variant_discount_price'][$i]) ? (float)$_POST['variant_discount_price'][$i] : NULL;
+                        $variant_stock = (int)$_POST['variant_stock'][$i];
+                        $variant_status = $_POST['variant_status'][$i];
 
-            // 👇 Upload the image file
-            $variant_image = '';
-            if (isset($_FILES['variant_image']['name'][$i]) && $_FILES['variant_image']['error'][$i] === 0) {
-                 $upload_dir = '../assets/uploads/product/';
+                        // Handle variant image upload
+                        $variant_image = NULL;
+                        if (isset($_FILES['variant_image']['name'][$i]) && $_FILES['variant_image']['error'][$i] === 0) {
+                            $upload_dir = '../assets/uploads/product/';
 
-                // Create directory if it doesn't exist
-                if (!is_dir($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
+                            // Create directory if it doesn't exist
+                            if (!is_dir($upload_dir)) {
+                                mkdir($upload_dir, 0777, true);
+                            }
 
-                $file_name = $_FILES['variant_image']['name'][$i];
-                $file_tmp = $_FILES['variant_image']['tmp_name'][$i];
-                $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-                $new_filename = uniqid() . '.' . $file_ext;
-                $upload_path = $upload_dir . $new_filename;
+                            $file_name = $_FILES['variant_image']['name'][$i];
+                            $file_tmp = $_FILES['variant_image']['tmp_name'][$i];
+                            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                            $new_filename = uniqid() . '.' . $file_ext;
+                            $upload_path = $upload_dir . $new_filename;
 
-                if (move_uploaded_file($file_tmp, $upload_path)) {
-                    $variant_image = 'asset/uploads/variant/' . $new_filename;
-                    $variant_image =  $new_filename;
+                            if (move_uploaded_file($file_tmp, $upload_path)) {
+                                // Store as JSON array (matching your database format)
+                                $variant_image = json_encode([$new_filename]);
+                            }
+                        }
+
+                        // Insert variant into database
+                        $variant_query = "INSERT INTO product_variants (
+                        product_id, variant_name, sku, price, discount_price, 
+                        stock_quantity, status, image, created_at, updated_at
+                    ) VALUES (
+                        '$product_id', '$variant_name', '$variant_sku', '$variant_price', " .
+                            ($variant_discount_price ? "'$variant_discount_price'" : "NULL") . ", 
+                        '$variant_stock', '$variant_status', " .
+                            ($variant_image ? "'$variant_image'" : "NULL") . ", 
+                        NOW(), NOW()
+                    )";
+
+                        if (!mysqli_query($conn, $variant_query)) {
+                            echo "Error inserting variant: " . mysqli_error($conn);
+                        }
+                    }
                 }
             }
 
-            // ✅ Now insert into DB
-            $variant_query = "INSERT INTO product_variants (
-                product_id, variant_name, sku, price, discount_price, 
-                stock_quantity, status, image
-            ) VALUES (
-                '$product_id', '$variant_name', '$variant_sku', '$variant_price', 
-                '$variant_discount_price', '$variant_stock', '$variant_status', '$variant_image'
-            )";
-
-            mysqli_query($conn, $variant_query);
-        }
-    }
-}
-
             $success_message = "Product created successfully!";
+            echo "<div class='alert alert-success'>$success_message</div>";
         } else {
             $error_message = "Error: " . mysqli_error($conn);
+            echo "<div class='alert alert-danger'>$error_message</div>";
         }
     }
 
@@ -620,7 +641,7 @@ if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
                                                 </div>
                                                 <div class="col-md-4 mb-2">
                                                     <label class="form-label">Image</label>
-                                                    <input type="file" name="variant_image[]" multiple class="form-control" >
+                                                    <input type="file" name="variant_image[]" multiple class="form-control">
                                                 </div>
                                                 <div class="col-md-2 mb-2">
                                                     <label class="form-label">Status</label>
@@ -630,7 +651,7 @@ if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
                                                     </select>
                                                 </div>
                                                 <div class="col-md-4 mb-2">
-                                                     <label class="form-label">&nbsp;</label>
+                                                    <label class="form-label">&nbsp;</label>
                                                     <button type="button" class="btn btn-danger btn-sm remove-variant form-control ">
                                                         <i class="bi bi-trash"></i> Remove Variant
                                                     </button>
@@ -729,7 +750,7 @@ if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
                                     </h5>
                                 </div>
                                 <div class="card-body">
-                                    <!-- Category --> 
+                                    <!-- Category -->
                                     <div class="mb-3">
                                         <label for="category_id" class="form-label">Category *</label>
                                         <select class="form-select" id="category_id" name="category_id" required>
@@ -924,9 +945,8 @@ if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
             document.getElementById('add-variant').addEventListener('click', function() {
                 const container = document.getElementById('variants-container');
                 const variantRow = document.createElement('div');
-                variantRow.className = 'variant-row';
-                variantRow.innerHTML = `
-         <div class="row">
+                 variantRow.className = 'variant-row';
+                 variantRow.innerHTML = `<div class="row">
                                                 <div class="col-md-4 mb-2">
                                                     <label class="form-label">Variant Name</label>
                                                     <input type="text" name="variant_name[]" class="form-control" placeholder="Size S, Red, etc.">
@@ -964,9 +984,8 @@ if (isset($_POST['variant_name']) && is_array($_POST['variant_name'])) {
                                                         <i class="bi bi-trash"></i> Remove Variant
                                                     </button>
                                                 </div>
-                                            </div>
-    `;
-                container.appendChild(variantRow);
+                                            </div>`;
+                 container.appendChild(variantRow);
             });
 
             // Remove variant

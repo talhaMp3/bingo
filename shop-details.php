@@ -76,7 +76,6 @@ LIMIT 1";
 
 $result = mysqli_query($conn, $query);
 $product = mysqli_fetch_assoc($result);
-
 if (!$product) {
     // Handle product not found
     die("Product not found");
@@ -149,6 +148,10 @@ if ($variant && !empty($variants)) {
 }
 
 $videos = json_decode($product['video'], true);
+
+// Ensure $videos is always an array
+
+
 
 // Set product name for display
 $productName = $displayProduct['name'];
@@ -652,14 +655,39 @@ include_once './layout/header.php';
                             </ul>
                         </div>
 
-                        <!-- tab content 3 -->
                         <div class="tab-content" data-tab="3">
-                            <?php foreach ($videos as $iframe) { ?>
-                                <div class="video-area w-100 h-100">
-                                    <?= $iframe ?>
-                                </div>
-                            <?php } ?>
+                            <?php if (!empty($videos) && is_array($videos)) : ?>
+                                <?php foreach ($videos as $iframe) : ?>
+                                    <?php if (!empty($iframe)) : ?>
+                                        <div class="video-area w-100 h-100">
+                                            <?= $iframe ?>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p>No videos available.</p>
+                            <?php endif; ?>
+                            <?php if (!is_array($videos)) {
+                                // If it's a single string, wrap it in an array
+                                $videos = !empty($product['video']) ? [$product['video']] : [];
+                            } ?>
+
+                            <?php if (!empty($videos)) {
+                                foreach ($videos as $video) {
+                                    $video = str_replace('["', '', $video);
+                                    $video = str_replace('"]', '', $video); ?>
+                                    <div class="video-area w-100 h-100">
+                                        <?= $video ?>
+                                    </div>
+                            <?php
+                                }
+                            } else {
+                                echo "No videos available.";
+                            } ?>
                         </div>
+
+                        <!-- tab content 3 -->
+
                         <!-- tab content 4 -->
                         <div class="tab-content" data-tab="4">
                             <h3 class="text-n100 text-center mb-lg-8 mb-6">Customer Reviews</h3>

@@ -18,8 +18,13 @@ if (!$conn) {
 
 $whoops = new \Whoops\Run;
 $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
-$whoops->register();
+
+if (!empty($_ENV['APP_DEBUG']) && $_ENV['APP_DEBUG'] == true) {
+    $whoops->register();
+}
+
 mysqli_set_charset($conn, "utf8");
+
 
 $dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
 $dotenv->load();

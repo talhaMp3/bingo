@@ -2,7 +2,6 @@
 session_start();
 include_once './include/connection.php';
 include_once './layout/header.php';
-
 $user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
 
 $products_query = "
@@ -28,94 +27,144 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $products_result = $stmt->get_result();
 
+
+
+
+$sql = "SELECT * FROM hero_banners WHERE status='active' ORDER BY sort_order ASC";
+$result = $conn->query($sql);
+
+$text_sliders_sql = "SELECT * FROM text_sliders WHERE status='active' ORDER BY sort_order ASC";
+$text_sliders_result = $conn->query($text_sliders_sql);
+
+
+
+$landing_sql = "SELECT id, banner_image, circle_image, heading, description, primary_btn_text, primary_btn_link, secondary_btn_text, secondary_btn_link, features, status, created_at 
+                FROM landing_page 
+                WHERE status = 'active' 
+                ORDER BY id DESC 
+                LIMIT 1";
+
+$landing_res = $conn->query($landing_sql);
+$landing     = $landing_res->fetch_assoc();
+
+
+$features = [];
+if (!empty($landing['features'])) {
+  $features = json_decode($landing['features'], true);
+}
+
+
+$brand_logos_sql = "SELECT * FROM brand_logos WHERE status = 'active' ORDER BY sort_order ASC";
+$brand_logos_res = $conn->query($brand_logos_sql);
+
+
+
+$hero_slides_sql = "SELECT * FROM hero_slides WHERE status=1 ORDER BY sort_order ASC";
+$hero_slides_res = $conn->query($hero_slides_sql);
+
+
 ?>
+
 <!-- main start -->
 <main class="pt-lg-6">
   <!-- hero section start -->
   <section class="hero-section px-xl-20 px-lg-10 px-sm-7 pt-120">
     <div class="container-fluid">
       <div class="row g-6">
+
+
         <div class="col-lg-7">
-          <div
-            class="hero-swiper-wrapper py-3xl-12 py-lg-8 py-6 px-4xl-20 px-3xl-10 px-lg-8 px-sm-6 p-4 bg-secondary">
-            <span class="text-animation-word display-two text-n100 mb-1 text-center">FREEDOM RIDE</span>
-            <span class="text-animation-word d-block text-n100 mb-lg-5 mb-3 text-center">
-              Your personal electric bike with insurance from
-              <span class="text-secondary2">€88/</span>month.
-            </span>
-            <div class="d-center gap-lg-5 gap-3">
-              <a href="shop.html" class="btn-secondary">Shop Bikes
-                <span class="icon">
-                  <i class="ph ph-arrow-up-right"></i>
-                  <i class="ph ph-arrow-up-right"></i>
-                </span>
-              </a>
-              <a href="about-us.html"
-                class="text-decoration-underline fw-medium hover-text-secondary2">Learn More</a>
+          <div class="swiper hero-swiper">
+            <div class="swiper-wrapper">
+
+              <?php while ($row = $hero_slides_res->fetch_assoc()): ?>
+                <div class="swiper-slide">
+                  <div class="hero-swiper-wrapper py-3xl-12 py-lg-8 py-6 px-4xl-20 px-3xl-10 px-lg-8 px-sm-6 p-4 bg-secondary">
+
+                    <!-- Title -->
+                    <span class="text-animation-word display-two text-n100 mb-1 text-center">
+                      <?php foreach (explode(" ", $row['title']) as $word): ?>
+                        <div class="word"><?= htmlspecialchars($word) ?></div>
+                      <?php endforeach; ?>
+                    </span>
+
+                    <!-- Subtitle -->
+                    <span class="text-animation-word d-block text-n100 mb-lg-5 mb-3 text-center">
+                      <?php foreach (explode(" ", $row['subtitle']) as $word): ?>
+                        <div class="word"><?= htmlspecialchars($word) ?></div>
+                      <?php endforeach; ?>
+                      <?php if (!empty($row['price_text'])): ?>
+                        <span class="text-secondary2">
+                          <div class="word"><?= htmlspecialchars($row['price_text']) ?></div>
+                        </span>
+                      <?php endif; ?>
+                    </span>
+
+                    <!-- Buttons -->
+                    <div class="d-center gap-lg-5 gap-3">
+                      <?php if (!empty($row['btn1_text'])): ?>
+                        <a href="<?= htmlspecialchars($row['btn1_link']) ?>" class="btn-secondary">
+                          <?= htmlspecialchars($row['btn1_text']) ?>
+                          <span class="icon">
+                            <i class="ph ph-arrow-up-right"></i>
+                            <i class="ph ph-arrow-up-right"></i>
+                          </span>
+                        </a>
+                      <?php endif; ?>
+
+                      <?php if (!empty($row['btn2_text'])): ?>
+                        <a href="<?= htmlspecialchars($row['btn2_link']) ?>" class="text-decoration-underline fw-medium hover-text-secondary2">
+                          <?= htmlspecialchars($row['btn2_text']) ?>
+                        </a>
+                      <?php endif; ?>
+                    </div>
+
+                    <!-- Image -->
+                    <div class="hero-swiper-item position-relative z-1 mt-5">
+                      <?php if (!empty($row['badge_text'])): ?>
+                        <span class="bg-text text-uppercase font-archivo top-30 left-50">
+                          <?= htmlspecialchars($row['badge_text']) ?>
+                        </span>
+                      <?php endif; ?>
+                      <img class="w-100" src="./assets/uploads/hero_slide/<?= htmlspecialchars($row['image']) ?>" alt="hero swiper">
+                    </div>
+
+                  </div>
+                </div>
+              <?php endwhile; ?>
+
             </div>
 
-            <!-- hero swiper -->
-            <div class="swiper hero-swiper pt-4xl-18 pt-10">
-              <div class="swiper-wrapper">
-                <div class="swiper-slide px-3xl-8">
-                  <!-- hero swiper item -->
-                  <div class="hero-swiper-item position-relative z-1">
-                    <span class="bg-text text-uppercase font-archivo top-30 left-50">C4</span>
-                    <img class="w-100" src="assets/images/hero-swiper-1.png" alt="hero swiper" />
-                  </div>
-                </div>
-                <div class="swiper-slide px-3xl-8">
-                  <!-- hero swiper item -->
-                  <div class="hero-swiper-item position-relative z-1">
-                    <span class="bg-text text-uppercase font-archivo top-30 left-50">T4</span>
-                    <img class="w-100" src="assets/images/hero-swiper-2.png" alt="hero swiper" />
-                  </div>
-                </div>
-                <div class="swiper-slide px-3xl-8">
-                  <!-- hero swiper item -->
-                  <div class="hero-swiper-item position-relative z-1">
-                    <span class="bg-text text-uppercase font-archivo top-30 left-50">A7</span>
-                    <img class="w-100" src="assets/images/hero-swiper-3.png" alt="hero swiper" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div
-              class="d-flex align-items-center justify-content-center gap-3 mt-n15 position-relative z-3">
-              <button
-                class="hero-swiper-prev icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2">
+            <!-- Navigation buttons -->
+            <div class="d-flex align-items-center justify-content-center gap-3 mt-n15 position-relative z-3">
+              <button class="hero-swiper-prev icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2">
                 <i class="ph ph-caret-left"></i>
               </button>
-              <button
-                class="hero-swiper-next icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2">
+              <button class="hero-swiper-next icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2">
                 <i class="ph ph-caret-right"></i>
               </button>
             </div>
           </div>
         </div>
+
+
+
+
         <div class="col-lg-5">
           <!-- hero banner -->
           <div class="d-lg-grid d-sm-flex d-grid gap-6">
-            <!-- hero banner item -->
-            <div class="animate-box">
-              <a href="accessories.html"
-                class="hero-banner-item d-block hover-border-secondary2 position-relative z-1 overflow-hidden">
-                <div class="hero-banner-wrapper">
-                  <img class="w-100 transition" src="assets/images/hero-banner-1.png"
-                    alt="hero banner" />
-                </div>
-              </a>
-            </div>
-            <!-- hero banner item -->
-            <div class="animate-box">
-              <a href="accessories.html"
-                class="hero-banner-item d-block hover-border-n0 position-relative z-1 overflow-hidden">
-                <div class="hero-banner-wrapper">
-                  <img class="w-100 transition" src="assets/images/hero-banner-2.png"
-                    alt="hero banner" />
-                </div>
-              </a>
-            </div>
+            <?php while ($banner = $result->fetch_assoc()): ?>
+              <div class="animate-box">
+                <a href="<?php echo htmlspecialchars($banner['link']); ?>"
+                  class="hero-banner-item d-block hover-border-secondary2 position-relative z-1 overflow-hidden">
+                  <div class="hero-banner-wrapper">
+                    <img class="w-100 transition"
+                      src="./assets/uploads/banners/<?php echo htmlspecialchars($banner['image']); ?>"
+                      alt="<?php echo htmlspecialchars($banner['alt_text']); ?>" />
+                  </div>
+                </a>
+              </div>
+            <?php endwhile; ?>
           </div>
         </div>
       </div>
@@ -127,198 +176,17 @@ $products_result = $stmt->get_result();
   <div class="my-6 p-lg-6 p-4 bg-primary overflow-hidden">
     <div class="swiper text-slider">
       <div class="swiper-wrapper">
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Free shipping for orders over $899
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
+        <?php while ($slider = $text_sliders_result->fetch_assoc()): ?>
+          <div class="swiper-slide w-fit">
+            <div class="d-flex align-items-center gap-lg-6 gap-4">
+              <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
+                <?php echo htmlspecialchars($slider['message']); ?>
+              </span>
+              <span class="d-block w-1px h-24px bg-n100"></span>
+            </div>
           </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              SPECIAL DISCOUNT
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Shipping through all of Europe
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Expert advice
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Returns extends over a period of 14 days
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Check Out Our Trendy E-Bikes
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Explore Our Latest Mountain Bikes
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Free shipping for orders over $899
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Returns extends over a period of 14 days
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Check Out Our Trendy E-Bikes
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              SPECIAL DISCOUNT
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Shipping through all of Europe
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Free shipping for orders over $899
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              SPECIAL DISCOUNT
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Shipping through all of Europe
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Expert advice
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Returns extends over a period of 14 days
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Check Out Our Trendy E-Bikes
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Explore Our Latest Mountain Bikes
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Free shipping for orders over $899
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Returns extends over a period of 14 days
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Check Out Our Trendy E-Bikes
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              SPECIAL DISCOUNT
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
-        <div class="swiper-slide w-fit">
-          <div class="d-flex align-items-center gap-lg-6 gap-4">
-            <span class="text-sm font-noto-sans fw-medium text-uppercase text-n100">
-              Shipping through all of Europe
-            </span>
-            <span class="d-block w-1px h-24px bg-n100"></span>
-          </div>
-        </div>
+        <?php endwhile; ?>
+
       </div>
     </div>
   </div>
@@ -396,124 +264,90 @@ $products_result = $stmt->get_result();
   <!-- product section end -->
 
   <!-- landing section start -->
+  <!-- landing section start -->
   <section class="landing-section px-xl-20 px-lg-10 px-sm-7 pt-120 pb-lg-20 pb-10 custom-cursor-none">
     <div class="container-fluid">
       <div class="row g-6 align-items-center justify-content-between">
+
+        <!-- Left Banner -->
         <div class="col-lg-6 col-md-8 col-xs-10 mx-lg-0 mx-auto">
           <div class="landing-banner reveal-left">
-            <div class="circle-spin position-absolute top-0 start-100 translate-middle z-3">
-              <img class="w-100" src="assets/images/circle-stripes.png" alt="img" />
-            </div>
-            <img class="w-100" src="assets/images/landing-banner.png" alt="banner" />
+            <?php if (!empty($landing['circle_image'])): ?>
+              <div class="circle-spin position-absolute top-0 start-100 translate-middle z-3">
+                <img class="w-100" src="./assets/uploads/feature/<?= $landing['circle_image'] ?>" alt="circle" />
+              </div>
+            <?php endif; ?>
+            <img class="w-100" src="./assets/uploads/feature/<?= $landing['banner_image'] ?>" alt="banner" />
           </div>
         </div>
+
+        <!-- Right Content -->
         <div class="col-4xl-5 col-lg-6">
           <div class="mb-xxl-15 mb-xl-10 mb-8">
             <div class="mb-xl-10 mb-lg-8 mb-6">
               <span class="text-animation-line text-h1 text-n100 mb-lg-4 mb-3">
-                Advancing Electric Biking with Innovation, Performance, and
-                Sustainability.
+                <?= htmlspecialchars($landing['heading']) ?>
               </span>
               <p class="text-sm fw-normal text-n50">
-                At Eura, we revolutionized electric scooters, and now we're
-                doing the same for electric bikes. Our innovative designs
-                combine cutting-edge technology with unmatched performance,
-                offering a seamless and exhilarating ride for every cyclist.
-                Join us on this electrifying journey
+                <?= htmlspecialchars($landing['description']) ?>
               </p>
             </div>
             <div class="d-flex align-items-center gap-lg-5 gap-3">
-              <a href="shop.html" class="btn-secondary">Shop Bikes
-                <span class="icon">
-                  <i class="ph ph-arrow-up-right"></i>
-                  <i class="ph ph-arrow-up-right"></i>
-                </span>
-              </a>
-              <a href="about-us.html"
-                class="text-decoration-underline fw-medium hover-text-secondary2">Learn More</a>
+              <?php if (!empty($landing['primary_btn_text'])): ?>
+                <a href="<?= $landing['primary_btn_link'] ?>" class="btn-secondary">
+                  <?= htmlspecialchars($landing['primary_btn_text']) ?>
+                  <span class="icon">
+                    <i class="ph ph-arrow-up-right"></i>
+                    <i class="ph ph-arrow-up-right"></i>
+                  </span>
+                </a>
+              <?php endif; ?>
+              <?php if (!empty($landing['secondary_btn_text'])): ?>
+                <a href="<?= $landing['secondary_btn_link'] ?>" class="text-decoration-underline fw-medium hover-text-secondary2">
+                  <?= htmlspecialchars($landing['secondary_btn_text']) ?>
+                </a>
+              <?php endif; ?>
             </div>
           </div>
-          <div
-            class="landing-feature-wrapper border-8 border-n0 py-xxl-16 py-xl-10 py-8 pe-4xl-12 pe-lg-10 pe-md-8 pe-xs-6 bg-primary position-relative z-1 animate-box">
+
+          <!-- Features -->
+          <div class="landing-feature-wrapper border-8 border-n0 py-xxl-16 py-xl-10 py-8 pe-4xl-12 pe-lg-10 pe-md-8 pe-xs-6 bg-primary position-relative z-1 animate-box">
             <ul class="d-flex flex-xs-row flex-column align-items-center justify-content-between gap-4">
-              <li>
-                <div class="feature-item d-grid gap-2">
-                  <img src="assets/images/landing-feature-icon-1.png" alt="icon" />
-                  <span class="text-sm ch-20 d-block">Limited lifetime warranty on all Bikes.</span>
-                </div>
-              </li>
-
-              <li>
-                <div class="feature-item d-grid gap-2">
-                  <img src="assets/images/landing-feature-icon-2.png" alt="icon" />
-                  <span class="text-sm ch-20 d-block">Free ground shipping and easy returns.</span>
-                </div>
-              </li>
-
-              <li>
-                <div class="feature-item d-grid gap-2">
-                  <img src="assets/images/landing-feature-icon-3.png" alt="icon" />
-                  <span class="text-sm ch-20 d-block">Designed, engineered & assembled in the
-                    USA.</span>
-                </div>
-              </li>
+              <?php foreach ($features as $feature): ?>
+                <li>
+                  <div class="feature-item d-grid gap-2">
+                    <img src="./assets/uploads/feature/<?= $feature['icon'] ?>" alt="icon" />
+                    <span class="text-sm ch-20 d-block"><?= htmlspecialchars($feature['text']) ?></span>
+                  </div>
+                </li>
+              <?php endforeach; ?>
             </ul>
           </div>
         </div>
+
       </div>
     </div>
   </section>
   <!-- landing section end -->
 
+  <!-- landing section end -->
+
+
   <!-- brand slider start -->
   <div class="pb-120">
     <div class="swiper brand-slider">
       <div class="swiper-wrapper align-items-center">
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-1.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-2.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-3.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-4.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-5.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-6.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-7.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-8.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-1.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-2.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-3.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-6.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-3.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-6.png" alt="brand logo" />
-        </div>
-        <div class="swiper-slide w-fit">
-          <img src="assets/images/brand-7.png" alt="brand logo" />
-        </div>
+        <?php while ($row = $brand_logos_res->fetch_assoc()): ?>
+          <div class="swiper-slide w-fit">
+            <?php if (!empty($row['link'])): ?>
+              <a href="<?= $row['link'] ?>" target="_blank">
+                <img src="./assets/uploads/brands/<?= $row['logo'] ?>" alt="<?= htmlspecialchars($row['brand_name']) ?>" />
+              </a>
+            <?php else: ?>
+              <img src="./assets/uploads/brands/<?= $row['logo'] ?>" alt="<?= htmlspecialchars($row['brand_name']) ?>" />
+            <?php endif; ?>
+          </div>
+        <?php endwhile; ?>
       </div>
     </div>
   </div>
