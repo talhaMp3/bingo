@@ -2,30 +2,55 @@
 session_start();
 include_once './include/connection.php';
 include_once './layout/header.php';
+
 $user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
 
-$products_query = "
-SELECT 
-    products.*, 
-    categories.name AS category_name, 
-    categories.slug AS category_slug,
-    IF(wishlist.id IS NOT NULL, 1, 0) AS in_wishlist
-FROM 
-    products
-JOIN 
-    categories ON products.category_id = categories.id
-LEFT JOIN 
-    wishlist ON wishlist.product_id = products.id AND wishlist.user_id = ?
-WHERE 
-    products.status = 'active'
-ORDER BY 
-    products.name ASC
-";
+if ($user_id) {
+  // Logged-in user → check wishlist
+  $products_query = "
+    SELECT 
+        products.*, 
+        categories.name AS category_name, 
+        categories.slug AS category_slug,
+        IF(wishlist.id IS NOT NULL, 1, 0) AS in_wishlist
+    FROM 
+        products
+    JOIN 
+        categories ON products.category_id = categories.id
+    LEFT JOIN 
+        wishlist ON wishlist.product_id = products.id AND wishlist.user_id = ?
+    WHERE 
+        products.status = 'active'
+    ORDER BY 
+        products.name ASC
+    ";
 
-$stmt = $conn->prepare($products_query);
-$stmt->bind_param("i", $user_id);
+  $stmt = $conn->prepare($products_query);
+  $stmt->bind_param("i", $user_id);
+} else {
+  // Guest user → no wishlist check
+  $products_query = "
+    SELECT 
+        products.*, 
+        categories.name AS category_name, 
+        categories.slug AS category_slug,
+        0 AS in_wishlist
+    FROM 
+        products
+    JOIN 
+        categories ON products.category_id = categories.id
+    WHERE 
+        products.status = 'active'
+    ORDER BY 
+        products.name ASC
+    ";
+
+  $stmt = $conn->prepare($products_query);
+}
+
 $stmt->execute();
 $products_result = $stmt->get_result();
+
 
 
 
@@ -62,7 +87,49 @@ $brand_logos_res = $conn->query($brand_logos_sql);
 $hero_slides_sql = "SELECT * FROM hero_slides WHERE status=1 ORDER BY sort_order ASC";
 $hero_slides_res = $conn->query($hero_slides_sql);
 
+$category_sql = "SELECT * FROM categories WHERE status='active' and parent_id IS NULL ";
+$category_res = $conn->query($category_sql);
 
+
+$best_product_query = "
+  SELECT 
+    p.id AS product_id,
+    p.name AS product_name,
+    p.slug,
+    p.price AS base_price,
+    p.discount_price AS base_discount_price,
+    p.stock_quantity AS base_stock,
+    p.image AS product_images,
+    p.short_description,
+    p.long_description,
+    p.status AS product_status,
+    c.id AS category_id,
+    c.name AS category_name,
+    c.slug AS category_slug,
+    CONCAT('[', GROUP_CONCAT(
+        JSON_OBJECT(
+            'id', v.id,
+            'name', v.variant_name,
+            'price', v.price,
+            'discount_price', v.discount_price,
+            'stock', v.stock_quantity,
+            'images', v.image,
+            'status', v.status
+        )
+    ), ']') AS variants_json
+FROM products p
+LEFT JOIN categories c ON p.category_id = c.id
+LEFT JOIN product_variants v 
+    ON p.id = v.product_id AND v.status = 'active'
+WHERE p.status = 'active'
+GROUP BY p.id, p.name, p.slug, p.price, p.discount_price, p.stock_quantity, 
+        p.image, p.short_description, p.long_description, p.status, 
+        c.id, c.name, c.slug
+ORDER BY p.created_at DESC;
+
+      ";
+
+$best_product_result = mysqli_query($conn, $best_product_query);
 ?>
 
 <!-- main start -->
@@ -71,8 +138,6 @@ $hero_slides_res = $conn->query($hero_slides_sql);
   <section class="hero-section px-xl-20 px-lg-10 px-sm-7 pt-120">
     <div class="container-fluid">
       <div class="row g-6">
-
-
         <div class="col-lg-7">
           <div class="swiper hero-swiper">
             <div class="swiper-wrapper">
@@ -250,9 +315,12 @@ $hero_slides_res = $conn->query($hero_slides_sql);
                     <span class="text-xl fw-semibold text-secondary2">₹<?= $item['discount_price'] ?>
                       INR</span>
                   </div>
-                  <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
+                  <button
+                    class="outline-btn text-n100 fw-medium box-style box-secondary2 addToCart"
+                    data-product="<?php echo  $item['id'] ?>"
+                    data-variant="<?php echo isset($item['variant_id']) ? $item['variant_id'] : ''; ?>">ADD
                     TO CART
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -369,96 +437,24 @@ $hero_slides_res = $conn->query($hero_slides_sql);
         </div>
       </div>
       <div class="row g-6">
-        <div class="col-lg-4 col-xs-6">
-          <div class="animate-box">
-            <a href="shop.html" class="d-block category-card shake-animation">
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-bikes.png" alt="category" />
-              </div>
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-bikes.png" alt="category" />
-              </div>
-              <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
-                <span class="outline-btn bg-n0 radius-pill box-style box-secondary2">BIKES</span>
-              </div>
-            </a>
+        <?php while ($item = $category_res->fetch_assoc()): ?>
+          <div class="col-lg-4 col-xs-6">
+            <div class="animate-box">
+              <a href="shop.php?category=<?= $item['slug'] ?>" class="d-block category-card shake-animation">
+                <div class="shake-thumb">
+                  <img class="w-100" src="./assets/uploads/categories/<?php echo $item['image'] ?>" alt="category" />
+                </div>
+                <div class="shake-thumb">
+                  <img class="w-100" src="./assets/uploads/categories/<?php echo $item['image'] ?>" alt="category" />
+                </div>
+                <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
+                  <span class="outline-btn bg-n0 radius-pill box-style box-secondary2"><?php echo htmlspecialchars($item['name']); ?></span>
+                </div>
+              </a>
+            </div>
           </div>
-        </div>
-        <div class="col-lg-4 col-xs-6">
-          <div class="animate-box">
-            <a href="shop.html" class="d-block category-card shake-animation">
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-accessories.png" alt="category" />
-              </div>
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-accessories.png" alt="category" />
-              </div>
-              <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
-                <span class="outline-btn bg-n0 radius-pill box-style box-secondary2">ACCESSORIES</span>
-              </div>
-            </a>
-          </div>
-        </div>
-        <div class="col-lg-4 col-xs-6">
-          <div class="animate-box">
-            <a href="shop.html" class="d-block category-card shake-animation">
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-parts.png" alt="category" />
-              </div>
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-parts.png" alt="category" />
-              </div>
-              <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
-                <span class="outline-btn bg-n0 radius-pill box-style box-secondary2">PARTS</span>
-              </div>
-            </a>
-          </div>
-        </div>
-        <div class="col-lg-4 col-xs-6">
-          <div class="animate-box">
-            <a href="shop.html" class="d-block category-card shake-animation">
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-gear.png" alt="category" />
-              </div>
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-gear.png" alt="category" />
-              </div>
-              <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
-                <span class="outline-btn bg-n0 radius-pill box-style box-secondary2">GEAR</span>
-              </div>
-            </a>
-          </div>
-        </div>
-        <div class="col-lg-4 col-xs-6">
-          <div class="animate-box">
-            <a href="shop.html" class="d-block category-card shake-animation">
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-electronics.png" alt="category" />
-              </div>
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-electronics.png" alt="category" />
-              </div>
-              <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
-                <span class="outline-btn bg-n0 radius-pill box-style box-secondary2">ELECTRONICS</span>
-              </div>
-            </a>
-          </div>
-        </div>
-        <div class="col-lg-4 col-xs-6">
-          <div class="animate-box">
-            <a href="shop.html" class="d-block category-card shake-animation">
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-equioment.png" alt="category" />
-              </div>
-              <div class="shake-thumb">
-                <img class="w-100" src="assets/images/category-equioment.png" alt="category" />
-              </div>
-              <div class="position-absolute bottom-0 left-0 z-3 mb-lg-8 mb-6 ms-lg-8 ms-6">
-                <span class="outline-btn bg-n0 radius-pill box-style box-secondary2">EQUIPMENT</span>
-              </div>
-            </a>
-          </div>
-        </div>
+        <?php endwhile; ?>
+
       </div>
     </div>
   </section>
@@ -493,453 +489,112 @@ $hero_slides_res = $conn->query($hero_slides_sql);
       </div>
     </div>
 
-    <!-- best product in year swiper -->
     <div class="swiper best-product-slider mb-lg-15 mb-md-10 mb-8">
       <div class="swiper-wrapper">
-        <div class="swiper-slide">
-          <div class="product-card3 has-color-option">
-            <div
-              class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
-              <!-- product type and wishlist btn -->
-              <div class="d-flex align-items-center justify-content-end">
-                <button
-                  class="single-wishlist-btn text-secondary2 text-xl icon-40px bg-n0 tooltip-btn tooltip-left position-relative"
-                  data-tooltip="Add to wishlist">
-                  <i class="ph ph-heart"></i>
-                </button>
-              </div>
-              <!-- product thumb -->
-              <div class="product-thumb scale-animation">
-                <img class="product-image w-100" src="assets/images/bike-yellow.png"
-                  alt="product" />
-              </div>
-              <!-- button -->
-              <a href="shop.html" class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
-                Shop Bike
-              </a>
-            </div>
-            <div class="d-grid gap-lg-5 gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <ul class="d-flex align-items-center text-n100 gap-1 text-base">
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                    </ul>
-                    <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
-                  </div>
-                  <span class="text-sm fw-normal text-n50 text-nowrap">Brand:
-                    <span class="text-n100 fw-bold">Schwmin</span></span>
+        <?php
+        while ($product = mysqli_fetch_assoc($best_product_result)) {
+          // Decode product images
+          $images = json_decode($product['product_images'], true);
+          $mainImage = !empty($images) ? $images[0] : 'default.png';
+
+          // Initialize variants array
+          $variants = [];
+
+          if (!empty($product['variants_json'])) {
+            $decodedVariants = json_decode($product['variants_json'], true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+              $variants = $decodedVariants;
+            } else {
+              error_log("JSON decode failed for product {$product['product_id']}: " . json_last_error_msg());
+            }
+          }
+        ?>
+
+          <div class="swiper-slide">
+            <div class="product-card3 has-color-option">
+              <div class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 
+      p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
+
+
+                <!-- main product image -->
+                <div class="product-thumb scale-animation">
+                  <img class="product-image w-100" src="./assets/uploads/product/<?php echo $mainImage; ?>" alt="<?php echo $product['product_name']; ?>" />
                 </div>
-                <div class="d-flex align-items-center gap-2 custom-cursor-none">
-                  <!-- select product color -->
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Green" data-image="assets/images/bike-green.png"
-                    style="background-color: #008000"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Yellow" data-image="assets/images/bike-yellow.png"
-                    style="background-color: #fde34d"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Orange" data-image="assets/images/bike-orange.png"
-                    style="background-color: #eb453b"></button>
-                </div>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <a href="shop-details.html">
-                  <h4 class="text-animation-word text-n100 hover-text-secondary2">
-                    Merida Scultura Sukura
-                  </h4>
+
+                <!-- shop btn -->
+                <a href="shop-details.php?slug=<?php echo $product['slug']; ?>"
+                  class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
+                  Shop Now
                 </a>
-                <span class="text-h4 text-n100">$321</span>
+              </div>
+
+              <div class="d-grid gap-lg-5 gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <ul class="d-flex align-items-center text-n100 gap-1 text-base">
+                        <li><i class="ph-fill ph-star"></i></li>
+                        <li><i class="ph-fill ph-star"></i></li>
+                        <li><i class="ph-fill ph-star"></i></li>
+                        <li><i class="ph-fill ph-star"></i></li>
+                        <li><i class="ph-fill ph-star"></i></li>
+                      </ul>
+                      <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
+                    </div>
+                    <span class="text-sm fw-normal text-n50 text-nowrap">
+                      <span class="text-n100 fw-bold"><?php echo $product['category_name']; ?></span>
+                    </span>
+                  </div>
+
+                  <!-- Variant images -->
+                  <div class="d-flex align-items-center gap-2 custom-cursor-none">
+                    <?php
+
+                    echo '<button class="color-option icon-32px tooltip-btn tooltip-top position-relative"
+                    data-tooltip="' . htmlspecialchars($product['product_name']) . '" 
+                    data-image="./assets/uploads/product/' .  $mainImage . '" 
+                    style="background-image:url(\'./assets/uploads/product/' .  $mainImage . '\');background-size:cover;background-position:center;border:1px solid #ddd;"></button>';
+
+                    if (!empty($variants)) {
+                      foreach ($variants as $variant) {
+                        if (!empty($variant['images'])) {
+                          $variantImages = json_decode($variant['images'], true);
+                          if (!empty($variantImages)) {
+                            $variantImage = $variantImages[0];
+                          } else {
+                            $variantImage = $variant['images']; // In case it's just a string
+                          }
+
+                          echo '<button class="color-option icon-32px tooltip-btn tooltip-top position-relative"
+                    data-tooltip="' . htmlspecialchars($variant['name']) . '" 
+                    data-image="./assets/uploads/product/' . $variantImage . '" 
+                    style="background-image:url(\'./assets/uploads/product/' . $variantImage . '\');background-size:cover;background-position:center;border:1px solid #ddd;"></button>';
+                        }
+                      }
+                    }
+                    ?>
+                  </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between">
+                  <a href="shop-details.php?slug=<?php echo $product['slug']; ?>">
+                    <h4 class="text-animation-word text-n100 hover-text-secondary2">
+                      <?php echo $product['product_name']; ?>
+                    </h4>
+                  </a>
+                  <span class="text-h4 text-n100">
+                    <?php echo "₹" . $product['base_discount_price'] ?: $product['base_price']; ?>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="swiper-slide">
-          <div class="product-card3 has-color-option">
-            <div
-              class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
-              <!-- product type and wishlist btn -->
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-1">
-                  <span
-                    class="py-lg-2 py-1 px-lg-5 px-3 radius-pill border border-n100 text-n100">NEW</span>
-                  <span
-                    class="py-lg-2 py-1 px-lg-5 px-3 radius-pill border border-secondary2 text-n0 bg-secondary2">SALE</span>
-                </div>
-                <button
-                  class="single-wishlist-btn text-secondary2 text-xl icon-40px bg-n0 tooltip-btn tooltip-left position-relative"
-                  data-tooltip="Add to wishlist">
-                  <i class="ph ph-heart"></i>
-                </button>
-              </div>
-              <!-- product thumb -->
-              <div class="product-thumb scale-animation">
-                <img class="product-image w-100" src="assets/images/bike-orange.png"
-                  alt="product" />
-              </div>
-              <!-- button -->
-              <a href="shop.html" class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
-                Shop Bike
-              </a>
-            </div>
-            <div class="d-grid gap-lg-5 gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <ul class="d-flex align-items-center text-n100 gap-1 text-base">
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                    </ul>
-                    <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
-                  </div>
-                  <span class="text-sm fw-normal text-n50 text-nowrap">Brand:
-                    <span class="text-n100 fw-bold">Schwmin</span></span>
-                </div>
-                <div class="d-flex align-items-center gap-2 custom-cursor-none">
-                  <!-- select product color -->
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Green" data-image="assets/images/bike-green.png"
-                    style="background-color: #008000"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Yellow" data-image="assets/images/bike-yellow.png"
-                    style="background-color: #fde34d"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Orange" data-image="assets/images/bike-orange.png"
-                    style="background-color: #eb453b"></button>
-                </div>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <a href="shop-details.html">
-                  <h4 class="text-animation-word text-n100 hover-text-secondary2">
-                    Urban Wanderer
-                  </h4>
-                </a>
-                <span class="text-h4 text-n100">$321</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="swiper-slide">
-          <div class="product-card3 has-color-option">
-            <div
-              class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
-              <!-- product type and wishlist btn -->
-              <div class="d-flex align-items-center justify-content-end">
-                <button
-                  class="single-wishlist-btn text-secondary2 text-xl icon-40px bg-n0 tooltip-btn tooltip-left position-relative"
-                  data-tooltip="Add to wishlist">
-                  <i class="ph ph-heart"></i>
-                </button>
-              </div>
-              <!-- product thumb -->
-              <div class="product-thumb scale-animation">
-                <img class="product-image w-100" src="assets/images/bike-deep-green.png"
-                  alt="product" />
-              </div>
-              <!-- button -->
-              <a href="shop.html" class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
-                Shop Bike
-              </a>
-            </div>
-            <div class="d-grid gap-lg-5 gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <ul class="d-flex align-items-center text-n100 gap-1 text-base">
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                    </ul>
-                    <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
-                  </div>
-                  <span class="text-sm fw-normal text-n50 text-nowrap">Brand:
-                    <span class="text-n100 fw-bold">Schwmin</span></span>
-                </div>
-                <div class="d-flex align-items-center gap-2 custom-cursor-none">
-                  <!-- select product color -->
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Green" data-image="assets/images/bike-green.png"
-                    style="background-color: #008000"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Yellow" data-image="assets/images/bike-yellow.png"
-                    style="background-color: #fde34d"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Orange" data-image="assets/images/bike-orange.png"
-                    style="background-color: #eb453b"></button>
-                </div>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <a href="shop-details.html">
-                  <h4 class="text-animation-word text-n100 hover-text-secondary2">
-                    Electro Boost
-                  </h4>
-                </a>
-                <span class="text-h4 text-n100">$321</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="swiper-slide">
-          <div class="product-card3 has-color-option">
-            <div
-              class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
-              <!-- product type and wishlist btn -->
-              <div class="d-flex align-items-center justify-content-end">
-                <button
-                  class="single-wishlist-btn text-secondary2 text-xl icon-40px bg-n0 tooltip-btn tooltip-left position-relative"
-                  data-tooltip="Add to wishlist">
-                  <i class="ph ph-heart"></i>
-                </button>
-              </div>
-              <!-- product thumb -->
-              <div class="product-thumb scale-animation">
-                <img class="product-image w-100" src="assets/images/bike-green.png" alt="product" />
-              </div>
-              <!-- button -->
-              <a href="shop.html" class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
-                Shop Bike
-              </a>
-            </div>
-            <div class="d-grid gap-lg-5 gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <ul class="d-flex align-items-center text-n100 gap-1 text-base">
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                    </ul>
-                    <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
-                  </div>
-                  <span class="text-sm fw-normal text-n50 text-nowrap">Brand:
-                    <span class="text-n100 fw-bold">Schwmin</span></span>
-                </div>
-                <div class="d-flex align-items-center gap-2 custom-cursor-none">
-                  <!-- select product color -->
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Green" data-image="assets/images/bike-green.png"
-                    style="background-color: #008000"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Yellow" data-image="assets/images/bike-yellow.png"
-                    style="background-color: #fde34d"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Orange" data-image="assets/images/bike-orange.png"
-                    style="background-color: #eb453b"></button>
-                </div>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <a href="shop-details.html">
-                  <h4 class="text-animation-word text-n100 hover-text-secondary2">
-                    Terra Roamer
-                  </h4>
-                </a>
-                <span class="text-h4 text-n100">$321</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="swiper-slide">
-          <div class="product-card3 has-color-option">
-            <div
-              class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
-              <!-- product type and wishlist btn -->
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-1">
-                  <span
-                    class="py-lg-2 py-1 px-lg-5 px-3 radius-pill border border-n100 text-n100">NEW</span>
-                  <span
-                    class="py-lg-2 py-1 px-lg-5 px-3 radius-pill border border-secondary2 text-n0 bg-secondary2">SALE</span>
-                </div>
-                <button
-                  class="single-wishlist-btn text-secondary2 text-xl icon-40px bg-n0 tooltip-btn tooltip-left position-relative"
-                  data-tooltip="Add to wishlist">
-                  <i class="ph ph-heart"></i>
-                </button>
-              </div>
-              <!-- product thumb -->
-              <div class="product-thumb scale-animation">
-                <img class="product-image w-100" src="assets/images/bike-deep-green.png"
-                  alt="product" />
-              </div>
-              <!-- button -->
-              <a href="shop.html" class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
-                Shop Bike
-              </a>
-            </div>
-            <div class="d-grid gap-lg-5 gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <ul class="d-flex align-items-center text-n100 gap-1 text-base">
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                    </ul>
-                    <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
-                  </div>
-                  <span class="text-sm fw-normal text-n50 text-nowrap">Brand:
-                    <span class="text-n100 fw-bold">Schwmin</span></span>
-                </div>
-                <div class="d-flex align-items-center gap-2 custom-cursor-none">
-                  <!-- select product color -->
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Green" data-image="assets/images/bike-green.png"
-                    style="background-color: #008000"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Yellow" data-image="assets/images/bike-yellow.png"
-                    style="background-color: #fde34d"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Orange" data-image="assets/images/bike-orange.png"
-                    style="background-color: #eb453b"></button>
-                </div>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <a href="shop-details.html">
-                  <h4 class="text-animation-word text-n100 hover-text-secondary2">
-                    Electro Boost
-                  </h4>
-                </a>
-                <span class="text-h4 text-n100">$321</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="swiper-slide">
-          <div class="product-card3 has-color-option">
-            <div
-              class="product-thumb-wrapper d-grid gap-xl-10 gap-md-8 gap-md-6 gap-4 p-xl-10 p-lg-8 p-md-6 p-4 mb-lg-7 mb-5 bg-n20">
-              <!-- product type and wishlist btn -->
-              <div class="d-flex align-items-center justify-content-end">
-                <button
-                  class="single-wishlist-btn text-secondary2 text-xl icon-40px bg-n0 tooltip-btn tooltip-left position-relative"
-                  data-tooltip="Add to wishlist">
-                  <i class="ph ph-heart"></i>
-                </button>
-              </div>
-              <!-- product thumb -->
-              <div class="product-thumb scale-animation">
-                <img class="product-image w-100" src="assets/images/bike-green.png" alt="product" />
-              </div>
-              <!-- button -->
-              <a href="shop.html" class="outline-btn box-style box-secondary2 fw-bold w-100 radius-8">
-                Shop Bike
-              </a>
-            </div>
-            <div class="d-grid gap-lg-5 gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <ul class="d-flex align-items-center text-n100 gap-1 text-base">
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                      <li>
-                        <span><i class="ph-fill ph-star"></i></span>
-                      </li>
-                    </ul>
-                    <span class="text-sm fw-normal text-n50 text-nowrap">1 Reviews</span>
-                  </div>
-                  <span class="text-sm fw-normal text-n50 text-nowrap">Brand:
-                    <span class="text-n100 fw-bold">Schwmin</span></span>
-                </div>
-                <div class="d-flex align-items-center gap-2 custom-cursor-none">
-                  <!-- select product color -->
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Green" data-image="assets/images/bike-green.png"
-                    style="background-color: #008000"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Yellow" data-image="assets/images/bike-yellow.png"
-                    style="background-color: #fde34d"></button>
-                  <button class="color-option icon-16px tooltip-btn tooltip-top position-relative"
-                    data-tooltip="Orange" data-image="assets/images/bike-orange.png"
-                    style="background-color: #eb453b"></button>
-                </div>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <a href="shop-details.html">
-                  <h4 class="text-animation-word text-n100 hover-text-secondary2">
-                    Terra Roamer
-                  </h4>
-                </a>
-                <span class="text-h4 text-n100">$321</span>
-              </div>
-            </div>
-          </div>
-        </div>
+
+        <?php } ?>
       </div>
     </div>
+
     <div class="px-xl-20 px-lg-10 px-sm-7">
       <div class="container-fluid">
         <div class="bg-n100-1 best-product-pagination h-1px position-relative d-between"></div>

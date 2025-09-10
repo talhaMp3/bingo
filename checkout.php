@@ -25,7 +25,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #007bff, #0056b3);
+            background: linear-gradient(90deg, #eb453b, #fd7069ff);
             width: 0%;
             transition: width 0.3s ease;
         }
@@ -58,7 +58,7 @@
         }
 
         .step.active .step-circle {
-            background: #007bff;
+            background: #eb453b;
             color: white;
         }
 
@@ -89,7 +89,7 @@
         .section-icon {
             width: 24px;
             height: 24px;
-            background: #007bff;
+            background: #eb453b;
             border-radius: 6px;
             display: flex;
             align-items: center;
@@ -126,7 +126,7 @@
 
         .form-control-enhanced:focus {
             outline: none;
-            border-color: #007bff;
+            border-color: #eb453b;
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
         }
 
@@ -135,7 +135,7 @@
             top: -0.5rem;
             left: 0.75rem;
             font-size: 0.875rem;
-            color: #007bff;
+            color: #eb453b;
             font-weight: 500;
         }
 
@@ -190,12 +190,12 @@
         }
 
         .payment-option:hover {
-            border-color: #007bff;
+            border-color: #eb453b;
             background: #f8f9fa;
         }
 
         .payment-option.selected {
-            border-color: #007bff;
+            border-color: #eb453b;
             background: #e3f2fd;
         }
 
@@ -221,7 +221,7 @@
             width: 80px;
             height: 80px;
             border-radius: 8px;
-            overflow: hidden;
+            /* overflow: hidden; */
             position: relative;
         }
 
@@ -229,7 +229,7 @@
             position: absolute;
             top: -8px;
             right: -8px;
-            background: #007bff;
+            background: #eb453b;
             color: white;
             border-radius: 50%;
             width: 24px;
@@ -288,7 +288,7 @@
             width: 20px;
             height: 20px;
             margin: -10px 0 0 -10px;
-            border: 2px solid #007bff;
+            border: 2px solid #eb453b;
             border-top-color: transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -337,6 +337,24 @@
 
     <script defer src="assets/js/main.js"></script>
     <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .btn-outline-primary {
+            --bs-btn-color: #eb453b;
+            --bs-btn-border-color: #eb453b;
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #eb453b;
+            --bs-btn-hover-border-color: #eb453b;
+            --bs-btn-focus-shadow-rgb: 13, 110, 253;
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #eb453b;
+            --bs-btn-active-border-color: #eb453b;
+            --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+            --bs-btn-disabled-color: #eb453b;
+            --bs-btn-disabled-bg: transparent;
+            --bs-btn-disabled-border-color: #eb453b;
+            --bs-gradient: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -697,8 +715,12 @@
                         <button type="button" id="prevBtn" class="btn btn-outline-secondary" style="display: none;">
                             <i class="ph ph-arrow-left me-2"></i>Previous
                         </button>
-                        <button type="button" id="nextBtn" class="btn btn-primary ms-auto">
-                            Next<i class="ph ph-arrow-right ms-2"></i>
+
+                        <button type="button" id="nextBtn" class="btn btn-secondary ms-auto">
+                            Next <span class="icon">
+                                <i class="ph ph-arrow-up-right"></i>
+                                <i class="ph ph-arrow-up-right"></i>
+                            </span>
                         </button>
                         <button type="button" id="placeOrderBtn" class="btn btn-success ms-auto" style="display: none;">
                             <i class="ph ph-check me-2"></i>Place Order
@@ -1348,7 +1370,7 @@
                             <h2 class="text-success mb-3">Order Placed Successfully!</h2>
                             <p class="text-muted mb-4">Thank you for your purchase. Your order is being processed and you'll receive a confirmation email shortly.</p>
                             <div class="d-flex justify-content-center gap-3">
-                                <a href="index.html" class="btn btn-primary">Continue Shopping</a>
+                                <a href="index.html" class="btn-secondary">Continue Shopping</a>
                                 <a href="account.html" class="btn btn-outline-primary">Track Order</a>
                             </div>
                         </div>

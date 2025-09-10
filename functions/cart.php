@@ -48,10 +48,46 @@ switch ($action) {
         checkWishlistStatus($conn, $user_id, $product_id);
         break;
 
+    case 'update_qty':
+        $cart_id = intval($_POST['cart_id'] ?? 0);
+        $quantity = intval($_POST['quantity'] ?? 1);
+        updateCartQty($conn, $user_id, $cart_id, $quantity);
+        break;
+
+
     default:
         echo json_encode(['success' => false, 'message' => 'Unknown action.']);
         break;
 }
+
+
+// Function to update quantity in cart
+function updateCartQty($conn, $user_id, $cart_id, $quantity)
+{
+    if ($quantity <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid quantity.']);
+        return;
+    }
+
+    $sql = "UPDATE cart 
+            SET qty = ?, updated_at = NOW() 
+            WHERE id = ? AND user_id = ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iii", $quantity, $cart_id, $user_id);
+
+    if ($stmt->execute()) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Cart quantity updated successfully',
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to update cart: ' . $stmt->error]);
+    }
+
+    $stmt->close();
+}
+
 
 function addToCart($conn, $user_id, $product_id, $variant_id, $quantity)
 {
@@ -69,7 +105,7 @@ function addToCart($conn, $user_id, $product_id, $variant_id, $quantity)
         $update_stmt->bind_param("iiii", $quantity, $user_id, $product_id, $variant_id);
 
         if ($update_stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Product quantity updated in cart']);
+            echo json_encode(['success' => true, 'message' => 'Product quantity updated in cart 001']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error updating cart']);
         }

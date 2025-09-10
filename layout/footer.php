@@ -364,6 +364,40 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.1/cookieconsent.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.1/cookieconsent.min.js"></script>
+
+
+<script>
+    window.addEventListener("load", function() {
+        window.cookieconsent.initialise({
+            palette: {
+                popup: {
+                    background: "#e7eff0",
+                    text: "#333333"
+                },
+                button: {
+                    background: "#e74c3c",
+                    text: "#ffffff"
+                }
+            },
+            theme: "classic",
+            position: "bottom",
+            content: {
+                message: "We use cookies on our site to enhance your user experience, provide personalized content, and analyze our traffic.",
+                dismiss: "Accept all",
+                deny: "Reject non-essential",
+                link: "Cookie Policy",
+                href: "/cookie-policy.php"
+            },
+            type: "opt-in",
+            revokable: false
+        });
+    });
+</script>
+
+
 <?php if (isset($_SESSION['toast'])): ?>
     <script>
         Swal.fire({
@@ -424,6 +458,7 @@
 </script>
 
 <script>
+    // Wishlist Related Scripts
     $(document).ready(function() {
         // Add to wishlist function (for use in other pages)
         window.addToWishlist = function(productId, variantId, button) {
@@ -581,49 +616,44 @@
                 }
             });
         });
-
-
-        // Placeholder: Add to cart button
-        // $('.addToCart').click(function() {
-        //     var productId = $(this).data('product');
-        //     showToast('info', 'Add to cart functionality - implement your cart logic here');
-        //     console.log('Adding product ' + productId + ' to cart');
-        // });
+        // Update wishlist count
+        function updateWishlistCount() {
+            $.ajax({
+                url: 'functions/whishlist.php',
+                type: 'GET',
+                data: {
+                    action: 'count'
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#wishlistCount').text(response.count);
+                        if (response.count > 0) {
+                            $('#wishlistCount').show();
+                        } else {
+                            $('#wishlistCount').hide();
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error updating wishlist:", error);
+                }
+            });
+        }
+        // Check wishlist emptiness
+        function checkEmptyWishlist() {
+            if ($('.wishlist-item-container').length === 0) {
+                setTimeout(function() {
+                    location.reload();
+                }, 500);
+            }
+        }
     });
 
-    // Update wishlist count
-    function updateWishlistCount() {
-        $.ajax({
-            url: 'functions/whishlist.php',
-            type: 'GET',
-            data: {
-                action: 'count'
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    $('#wishlistCount').text(response.count);
-                    if (response.count > 0) {
-                        $('#wishlistCount').show();
-                    } else {
-                        $('#wishlistCount').hide();
-                    }
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Error updating wishlist:", error);
-            }
-        });
-    }
 
-    // Check wishlist emptiness
-    function checkEmptyWishlist() {
-        if ($('.wishlist-item-container').length === 0) {
-            setTimeout(function() {
-                location.reload();
-            }, 500);
-        }
-    }
+
+
+
     $(document).ready(function() {
         // Quantity Buttons
         $('.quantity').each(function() {
@@ -703,26 +733,55 @@
         });
     }
 
-    // Global Wishlist Checker (for use in product pages or elsewhere)
-    window.checkWishlistStatus = function(productId, callback) {
+    function updateCart(productId, newQty) {
         $.ajax({
-            url: 'wishlist.php',
+            url: './functions/cart.php',
             type: 'POST',
             data: {
-                action: 'check',
-                product_id: productId
+                action: 'update_qty',
+                product_id: productId,
+                quantity: newQty
             },
             dataType: 'json',
             success: function(response) {
-                if (response.success && callback) {
-                    callback(response.in_wishlist);
+                if (response.success) {
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
                 }
             }
         });
-    };
+    }
+
+
+    // Handle Decrement (–)
+    $(document).on('click', '.quantityDecrement', function() {
+        const $input = $(this).siblings('.quantityValue');
+        let value = parseInt($input.val()) || 1;
+        if (value > 1) {
+            $input.val(value - 1);
+            updateCart($(this).data('id'), $input.val());
+            fetchCart();
+
+        }
+    });
+
+    // Handle Increment (+)
+    $(document).on('click', '.quantityIncrement', function() {
+        const $input = $(this).siblings('.quantityValue');
+        let value = parseInt($input.val()) || 1;
+        $input.val(value + 1);
+        updateCart($(this).data('id'), $input.val());
+        fetchCart();
+
+    });
 
     // Add to Cart
     $('.fetch-cart-btn').on('click', function() {
+        fetchCart();
+    });
+
+    function fetchCart() {
         $.ajax({
             url: './functions/cart.php',
             type: 'POST',
@@ -731,6 +790,8 @@
             },
             dataType: 'json',
             success: function(data) {
+                console.log(data);
+
                 if (data.login_required) {
                     $('#loginModal').modal({
                         backdrop: 'static',
@@ -754,18 +815,22 @@
                             <img class="w-100" src="assets/images/${firstImage}" alt="cart item" />
                         </div>
                         <div class="cart-item-info">
-                            <span class="d-block text-n100 text-base fw-medium">${item.name}</span>
+                            <span class="d-block text-n100 text-base fw-medium">${item.name} ${item.qty}</span>
                             <span class="d-block text-n100 text-sm">Qty: ${item.qty}</span>
                             <span class="d-block text-secondary2 text-base my-lg-2 my-1">₹${item.discount_price}</span>
-                            <div class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
-                                <button class="quantityDecrement text-n100"><i class="ph ph-minus"></i></button>
-                                <input type="text" value="${item.qty}" class="quantityValue border-0 p-0 outline-0 bg-n20" />
-                                <button class="quantityIncrement text-n100"><i class="ph ph-plus"></i></button>
-                            </div>
+                             <div class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
+                    <button class="quantityDecrement text-n100" data-id="${item.product_id}">
+                        <i class="ph ph-minus"></i>
+                    </button>
+                    <input type="text" value="${item.qty}" class="quantityValue border-0 p-0 outline-0 bg-n20" />
+                    <button class="quantityIncrement text-n100" data-id="${item.product_id}">
+                        <i class="ph ph-plus"></i>
+                    </button>
+                </div>
                         </div>
                     </div>
                     <div class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
-                        <button class="cart-item-remove text-xl" data-id="${item.product_id}">
+                        <button class="cart-item-remove text-xl" data-id="${item.product_id}" >
                             <i class="ph ph-trash"></i>
                         </button>
                         <button class="cart-item-edit text-xl">
@@ -789,7 +854,7 @@
                 // $btn.prop('disabled', false).text('ADD TO CART');
             }
         });
-    });
+    }
 </script>
 </body>
 

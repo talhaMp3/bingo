@@ -1,54 +1,4 @@
 <?php
-/*
-include_once './include/connection.php';
-include_once './layout/header.php';
-
-
-$variant = isset($_GET['variant']) ? $_GET['variant'] : null;
-$slug = mysqli_real_escape_string($conn, $_GET['slug']);
-// $variant = mysqli_real_escape_string($conn, $_GET['variant']);
-
-$query = "
-SELECT 
-    products.*, 
-    categories.name AS category_name, 
-    categories.slug AS category_slug,
-    brands.name AS brand_name,
-    brands.slug AS brand_slug,
-    brands.logo AS brand_logo
-FROM 
-    products
-LEFT JOIN 
-    categories ON products.category_id = categories.id
-LEFT JOIN 
-    brands ON products.brand_id = brands.id
-WHERE 
-    products.slug = '$slug' 
-LIMIT 1";
-
-$result = mysqli_query($conn, $query);
-$product = mysqli_fetch_assoc($result);
-
-$product_id = $product['id'];
-
-$variant_query = "
-SELECT * FROM product_variants 
-WHERE product_id = $product_id AND status = 'active'
-ORDER BY id ASC";
-
-$variant_result = mysqli_query($conn, $variant_query);
-
-$videos = json_decode($product['video'], true);
-
-
-$productName = $product['name'];
-if (isset($slug) && isset($variant)) {
-    $productName = $product['name'] . ' - ' . 'Testing';
-}
-*/
-
-?>
-<?php
 session_start();
 include_once './include/connection.php';
 
@@ -76,6 +26,9 @@ LIMIT 1";
 
 $result = mysqli_query($conn, $query);
 $product = mysqli_fetch_assoc($result);
+// echo '<pre>';
+// print_r($product);
+// exit();
 if (!$product) {
     // Handle product not found
     die("Product not found");
@@ -89,14 +42,14 @@ if (isset($variant)) {
     $sql = "SELECT * FROM wishlist WHERE user_id = ? AND product_id = ? AND variant_id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("iii", $user_id, $product_id, $variant);
-} elseif (isset($product_id)) {
+} else {
 
     $sql = "SELECT * FROM wishlist WHERE user_id = ? AND product_id = ? AND variant_id IS NULL";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ii", $user_id, $product_id);
 }
 $stmt->execute();
-$result = $stmt->get_result();
+$wishlist_result = $stmt->get_result();
 // $wishlist_item = $result->fetch_assoc();
 // print_r($result);
 // exit();
@@ -240,18 +193,30 @@ include_once './layout/header.php';
                     <div class="position-sticky top-15">
                         <div class="d-flex align-items-center justify-content-between mb-lg-4 mb-md-3 mb-2">
                             <h1 class="mb-lg-4 mb-2 fs-2"><?= $displayProduct['name'] ?></h1>
-                            <?php if ($result->num_rows > 0) { ?>
-                                <button class=" single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left tooltip-btn tooltip-left removeFromWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $displayProduct['id'] ?>"
-                                    data-variant="<?php echo isset($displayProduct['variant_id']) ? $displayProduct['variant_id'] : ''; ?>">
+
+                            <?php
+                            if ($wishlist_result->num_rows > 0) {
+                            ?>
+                                <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left removeFromWishlist"
+                                    data-tooltip="Remove from wishlist"
+                                    data-product="<?= $displayProduct['id'] ?>"
+                                    data-variant="<?= $variant ?>">
                                     <i class="ph-heart ph-fill"></i>
                                 </button>
-                            <?php } elseif ($result->num_rows == 0) { ?>
-                                <button class=" single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left tooltip-btn tooltip-left addToWishlist" data-tooltip="Add to wishlist" data-product="<?php echo  $displayProduct['id'] ?>"
-                                    data-variant="<?php echo isset($displayProduct['variant_id']) ? $displayProduct['variant_id'] : ''; ?>">
+                            <?php
+                            } else {
+                            ?>
+                                <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n20 position-relative z-3 tooltip-btn tooltip-left addToWishlist"
+                                    data-tooltip="Add to wishlist"
+                                    data-product="<?= $displayProduct['id'] ?>"
+                                    data-variant="<?= $variant ?>">
                                     <i class="ph ph-heart"></i>
                                 </button>
-                            <?php } ?>
+                            <?php
+                            }
+                            ?>
                         </div>
+
                         <div
                             class="d-flex align-items-center gap-4xl-20 gap-3xl-15 gap-xl-10 gap-lg-8 gap-md-6 gap-4 gap-4 mb-lg-8 mb-md-6 mb-4">
                             <div class="product-rating d-flex align-items-center gap-1">

@@ -282,7 +282,7 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                                                             <div>
                                                                 <?php if (!empty($parent['image'])): ?>
                                                                     <div class="menu-item-thumb icon-48px radius-unset d-none d-lg-block mb-3 overflow-hidden">
-                                                                        <img class="w-100" src="<?= $base_url ?>/<?= $parent['image'] ?>" alt="<?= htmlspecialchars($parent['name']) ?>">
+                                                                        <img class="w-100" src="<?= $base_url ?>assets/uploads/categories/<?= $parent['image'] ?>" alt="<?= htmlspecialchars($parent['name']) ?>">
                                                                     </div>
                                                                 <?php endif; ?>
 
@@ -411,7 +411,7 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                     <!-- title and close button -->
                     <div
                         class="d-between gap-3 py-3xl-5 py-lg-3 py-2 px-xl-8 px-md-6 px-4">
-                        <span class="text-n100 text-base fw-semibold">Shopping Cart (1)</span>
+                        <span class="text-n100 text-base fw-semibold">Shopping Cart</span>
                         <button class="cart-close-btn text-xl">
                             <i class="ph ph-x"></i>
                         </button>
@@ -437,168 +437,8 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                 <div class="cart-box-bottom">
                     <!-- cart items -->
                     <div class="cart-items-wrapper">
-                        <div
-                            class="cart-items d-flex flex-column gap-lg-6 gap-4 px-xl-8 px-md-6 px-4">
-                            <div class="cart-item d-flex justify-content-between gap-4">
-                                <div class="d-flex align-items-center gap-4">
-                                    <div class="cart-item-thumb">
-                                        <img
-                                            class="w-100"
-                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
-                                            alt="cart item" />
-                                    </div>
-                                    <div class="cart-item-info">
-                                        <span class="d-block text-n100 text-base fw-medium">Giant Defy Advanced</span>
-                                        <span class="d-block text-n100 text-sm">Green / S2</span>
-                                        <span
-                                            class="d-block text-secondary2 text-base my-lg-2 my-1">$299.00
-                                        </span>
-                                        <!-- select product quantity -->
-                                        <div
-                                            class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
-                                            <button class="quantityDecrement text-n100">
-                                                <i class="ph ph-minus"></i>
-                                            </button>
-                                            <input
-                                                type="text"
-                                                value="1"
-                                                class="quantityValue border-0 p-0 outline-0 bg-n20" />
-                                            <button class="quantityIncrement text-n100">
-                                                <i class="ph ph-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
-                                    <button class="cart-item-remove text-xl">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                    <button class="cart-item-edit text-xl">
-                                        <i class="ph ph-pencil-simple-line"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="cart-item d-flex justify-content-between gap-4">
-                                <div class="d-flex align-items-center gap-4">
-                                    <div class="cart-item-thumb">
-                                        <img
-                                            class="w-100"
-                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
-                                            alt="cart item" />
-                                    </div>
-                                    <div class="cart-item-info">
-                                        <span class="d-block text-n100 text-base fw-medium">Giant Defy Advanced</span>
-                                        <span class="d-block text-n100 text-sm">Green / S2</span>
-                                        <span
-                                            class="d-block text-secondary2 text-base my-lg-2 my-1">$299.00
-                                        </span>
-                                        <!-- select product quantity -->
-                                        <div
-                                            class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
-                                            <button class="quantityDecrement text-n100">
-                                                <i class="ph ph-minus"></i>
-                                            </button>
-                                            <input
-                                                type="text"
-                                                value="1"
-                                                class="quantityValue border-0 p-0 outline-0 bg-n20" />
-                                            <button class="quantityIncrement text-n100">
-                                                <i class="ph ph-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
-                                    <button class="cart-item-remove text-xl">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                    <button class="cart-item-edit text-xl">
-                                        <i class="ph ph-pencil-simple-line"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="cart-item d-flex justify-content-between gap-4">
-                                <div class="d-flex align-items-center gap-4">
-                                    <div class="cart-item-thumb">
-                                        <img
-                                            class="w-100"
-                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
-                                            alt="cart item" />
-                                    </div>
-                                    <div class="cart-item-info">
-                                        <span class="d-block text-n100 text-base fw-medium">Giant Defy Advanced</span>
-                                        <span class="d-block text-n100 text-sm">Green / S2</span>
-                                        <span
-                                            class="d-block text-secondary2 text-base my-lg-2 my-1">$299.00
-                                        </span>
-                                        <!-- select product quantity -->
-                                        <div
-                                            class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
-                                            <button class="quantityDecrement text-n100">
-                                                <i class="ph ph-minus"></i>
-                                            </button>
-                                            <input
-                                                type="text"
-                                                value="1"
-                                                class="quantityValue border-0 p-0 outline-0 bg-n20" />
-                                            <button class="quantityIncrement text-n100">
-                                                <i class="ph ph-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
-                                    <button class="cart-item-remove text-xl">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                    <button class="cart-item-edit text-xl">
-                                        <i class="ph ph-pencil-simple-line"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="cart-item d-flex justify-content-between gap-4">
-                                <div class="d-flex align-items-center gap-4">
-                                    <div class="cart-item-thumb">
-                                        <img
-                                            class="w-100"
-                                            src="<?= $base_url ?>/assets/images/review-img-1.png"
-                                            alt="cart item" />
-                                    </div>
-                                    <div class="cart-item-info">
-                                        <span class="d-block text-n100 text-base fw-medium">Giant Defy Advanced</span>
-                                        <span class="d-block text-n100 text-sm">Green / S2</span>
-                                        <span
-                                            class="d-block text-secondary2 text-base my-lg-2 my-1">$299.00
-                                        </span>
-                                        <!-- select product quantity -->
-                                        <div
-                                            class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
-                                            <button class="quantityDecrement text-n100">
-                                                <i class="ph ph-minus"></i>
-                                            </button>
-                                            <input
-                                                type="text"
-                                                value="1"
-                                                class="quantityValue border-0 p-0 outline-0 bg-n20" />
-                                            <button class="quantityIncrement text-n100">
-                                                <i class="ph ph-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
-                                    <button class="cart-item-remove text-xl">
-                                        <i class="ph ph-trash"></i>
-                                    </button>
-                                    <button class="cart-item-edit text-xl">
-                                        <i class="ph ph-pencil-simple-line"></i>
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="cart-items d-flex flex-column gap-lg-6 gap-4 px-xl-8 px-md-6 px-4">
+
                         </div>
                     </div>
                     <div class="cart-box-form">

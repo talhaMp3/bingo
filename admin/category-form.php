@@ -144,7 +144,7 @@ if (isset($_POST['submit'])) {
         // Handle image upload
         $image_path = $edit_mode ? $category_data['image'] : '';
         if (!empty($_FILES['image']['name'])) {
-            $targetDir = '../uploads/categories/';
+            $targetDir = '../assets/uploads/categories/';
             if (!file_exists($targetDir)) {
                 mkdir($targetDir, 0755, true);
             }
@@ -158,7 +158,7 @@ if (isset($_POST['submit'])) {
                 if ($edit_mode && !empty($category_data['image']) && file_exists('../' . $category_data['image'])) {
                     unlink('../' . $category_data['image']);
                 }
-                $image_path = 'uploads/categories/' . $filename;
+                $image_path =  $filename;
             } else {
                 $errors[] = "Failed to upload image.";
             }

@@ -408,7 +408,7 @@ include_once('./layout/sidebar.php');
                                                     <?php endif; ?>
 
                                                     <?php if (!empty($category['image'])): ?>
-                                                        <img src="../<?= htmlspecialchars($category['image']) ?>"
+                                                        <img src="../assets/uploads/categories/<?= htmlspecialchars($category['image']) ?>"
                                                             alt="<?= htmlspecialchars($category['name']) ?>"
                                                             class="category-image">
                                                     <?php else: ?>
