@@ -77,6 +77,6 @@ if ($remember) {
 echo json_encode([
     'success' => true,
     'message' => 'Login successful!',
-    'redirect' => $_POST['redirect_to'] ?? null
+    'redirect' => $_POST['redirect_to'] ?? '/'
 ]);
 exit;

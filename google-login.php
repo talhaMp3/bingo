@@ -1,61 +1,4 @@
 <?php
-/*
-session_start();
-require 'vendor/autoload.php';
-include_once './include/connection.php';
-
-if (!isset($_POST['credential']) || empty($_POST['credential'])) {
-    die("No credential received. Please try logging in again.");
-}
-
-$client = new Google_Client(['client_id' => '29999697984-l7ihjbcmdnettkh5f9fhr78sskghe8qm.apps.googleusercontent.com']);
-$id_token = $_POST['credential'];
-
-try {
-    $payload = $client->verifyIdToken($id_token);
-    if ($payload) {
-        $email = $payload['email'];
-        $name = $payload['name'];
-        $google_id = $payload['sub'];   
-        $picture = $payload['picture'] ?? '';
-
-        // Check if user exists
-        $stmt = $conn->prepare("SELECT * FROM customers WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $res = $stmt->get_result();
-
-        if ($res->num_rows > 0) {
-
-            $user = $res->fetch_assoc();
-            $_SESSION['user_id'] = $user['id'];
-        } else {
-            $insert = $conn->prepare("INSERT INTO customers (full_name, email, google_id, login_type, profile_image, email_verified, status) VALUES (?, ?, ?, 'google', ?, 1, 'active')");
-            $insert->bind_param("ssss", $name, $email, $google_id, $picture);
-
-            if ($insert->execute()) {
-                $_SESSION['user_id'] = $insert->insert_id;
-            } else {
-                die("Error creating user account. Please try again.");
-            }
-        }
-
-        $_SESSION['toast'] = [
-            'type' => 'success',
-            'message' => 'Logged in successfully with Google!'
-        ];
-        header("Location: index.php");
-        exit;
-    } else {
-        echo "Invalid ID token. Please try logging in again.";
-    }
-} catch (Exception $e) {
-    echo "Error verifying Google login: " . $e->getMessage();
-}
-*/
-
-
-
 session_start();
 require 'vendor/autoload.php';
 include_once './include/connection.php';
@@ -66,9 +9,6 @@ function logError($message)
     $log = "[" . date('Y-m-d H:i:s') . "] " . $message . PHP_EOL;
     file_put_contents(__DIR__ . '/logs/google-login.log', $log, FILE_APPEND);
 }
-
-
-
 
 // Check if Google credential exists
 if (!isset($_POST['credential']) || empty($_POST['credential'])) {

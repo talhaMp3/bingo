@@ -212,7 +212,42 @@
         </div>
     </div>
 </div> -->
+<style>
+    /* Custom Google Sign-in Button Styles */
+    .custom-google-btn {
+        width: 100% !important;
+    }
 
+    /* Override Google's default button styling */
+    .custom-google-btn iframe,
+    .custom-google-btn div[role="button"] {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 8px !important;
+        /* Square corners, adjust as needed */
+        height: 50px !important;
+    }
+
+    /* Additional styling for the container */
+    #g_id_signin {
+        width: 100%;
+    }
+
+    .g_id_signin {
+        width: 100% !important;
+        display: block !important;
+    }
+
+    /* If you want perfectly square button */
+    .square-btn .custom-google-btn iframe,
+    .square-btn .custom-google-btn div[role="button"] {
+        height: 60px !important;
+        /* Adjust height to make it square-ish */
+        border-radius: 4px !important;
+        /* More square appearance */
+    }
+</style>
 <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true"
     data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
@@ -249,6 +284,7 @@
                 <!-- Normal Login Form -->
                 <form method="POST" id="ajaxLoginForm" class="col-12 d-grid gap-lg-6 gap-4 mb-lg-3 mb-md-3 mb-6">
                     <input type="hidden" name="action" value="ajax_login">
+                    <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($_SERVER['REQUEST_URI']); ?>">
 
                     <!-- Email -->
                     <div class="d-grid gap-lg-4 gap-2">
@@ -282,42 +318,6 @@
                     <!-- Submit -->
                     <button type="submit" class="btn-secondary py-lg-4 py-2 px-lg-6 px-4 radius-8 w-100">Login</button>
                 </form>
-                <style>
-                    /* Custom Google Sign-in Button Styles */
-                    .custom-google-btn {
-                        width: 100% !important;
-                    }
-
-                    /* Override Google's default button styling */
-                    .custom-google-btn iframe,
-                    .custom-google-btn div[role="button"] {
-                        width: 100% !important;
-                        min-width: 100% !important;
-                        max-width: 100% !important;
-                        border-radius: 8px !important;
-                        /* Square corners, adjust as needed */
-                        height: 50px !important;
-                    }
-
-                    /* Additional styling for the container */
-                    #g_id_signin {
-                        width: 100%;
-                    }
-
-                    .g_id_signin {
-                        width: 100% !important;
-                        display: block !important;
-                    }
-
-                    /* If you want perfectly square button */
-                    .square-btn .custom-google-btn iframe,
-                    .square-btn .custom-google-btn div[role="button"] {
-                        height: 60px !important;
-                        /* Adjust height to make it square-ish */
-                        border-radius: 4px !important;
-                        /* More square appearance */
-                    }
-                </style>
                 <div class="col-12">
                     <ul class="d-center gap-3 ">
                         <li class="w-100">
@@ -417,6 +417,7 @@
         $('#ajaxLoginForm').submit(function(e) {
             e.preventDefault();
             const formData = $(this).serialize();
+            console.log(formData);
 
             $.ajax({
                 url: 'functions/ajax-login.php',
@@ -424,6 +425,7 @@
                 data: formData,
                 dataType: 'json',
                 success: function(response) {
+                    // console.log(response);
                     if (response.success) {
                         Swal.fire({
                             toast: true,
@@ -440,17 +442,21 @@
                         });
                         // location.href = response.redirect || window.location.href;
                         $('#loginModal').modal('hide');
+                        // Redirect after short delay
+                        setTimeout(() => {
+                            window.location.href = response.redirect || window.location.href;
+                        }, 2000);
                     } else {
                         // Show error message in the modal
                         $('#ajaxLoginForm').prepend(`
-                        <div class="alert alert-danger">${response.message}</div>
-                    `);
+                                    <div class="alert alert-danger">${response.message}</div>
+                                `);
                     }
                 },
                 error: function() {
                     $('#ajaxLoginForm').prepend(`
-                    <div class="alert alert-danger">Something went wrong. Please try again.</div>
-                `);
+                                <div class="alert alert-danger">Something went wrong. Please try again.</div>
+                            `);
                 }
             });
         });
@@ -626,12 +632,13 @@
                 },
                 dataType: 'json',
                 success: function(response) {
+
                     if (response.success) {
-                        $('#wishlistCount').text(response.count);
+                        $('.whishlist_count').text(response.count);
                         if (response.count > 0) {
-                            $('#wishlistCount').show();
+                            $('.whishlist_count').show();
                         } else {
-                            $('#wishlistCount').hide();
+                            $('.whishlist_count').hide();
                         }
                     }
                 },
@@ -656,20 +663,7 @@
 
     $(document).ready(function() {
         // Quantity Buttons
-        $('.quantity').each(function() {
-            const $wrapper = $(this);
-            const $input = $wrapper.find('.quantityValue');
 
-            $wrapper.find('.quantityDecrement').on('click', function() {
-                let value = parseInt($input.val()) || 1;
-                $input.val(Math.max(1, value - 1));
-            });
-
-            $wrapper.find('.quantityIncrement').on('click', function() {
-                let value = parseInt($input.val()) || 1;
-                $input.val(value + 1);
-            });
-        });
 
         // Add to Cart
         $('.addToCart').on('click', function() {
@@ -702,6 +696,8 @@
                         // You can replace this with a toast/snackbar
                         // alert('✅ ' + data.message);
                         showToast('success', data.message);
+                        $('.card-count').text(data.cart_count);
+
                     } else {
                         showToast('error', data.message);
                     }
@@ -739,8 +735,27 @@
             type: 'POST',
             data: {
                 action: 'update_qty',
-                product_id: productId,
+                cart_id: productId,
                 quantity: newQty
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
+                }
+            }
+        });
+    }
+
+    function removeCart(cartId) {
+        $.ajax({
+            url: './functions/cart.php',
+            type: 'POST',
+            data: {
+                action: 'remove_cart',
+                cart_id: cartId
             },
             dataType: 'json',
             success: function(response) {
@@ -761,8 +776,8 @@
         if (value > 1) {
             $input.val(value - 1);
             updateCart($(this).data('id'), $input.val());
+            // fetchCart();
             fetchCart();
-
         }
     });
 
@@ -773,10 +788,14 @@
         $input.val(value + 1);
         updateCart($(this).data('id'), $input.val());
         fetchCart();
+    });
+    $(document).on('click', '.cart-item-remove', function() {
 
+        removeCart($(this).data('id'));
+        fetchCart();
     });
 
-    // Add to Cart
+
     $('.fetch-cart-btn').on('click', function() {
         fetchCart();
     });
@@ -790,7 +809,7 @@
             },
             dataType: 'json',
             success: function(data) {
-                console.log(data);
+
 
                 if (data.login_required) {
                     $('#loginModal').modal({
@@ -801,6 +820,7 @@
                     // Target wrapper
                     let $wrapper = $(".cart-items");
                     $wrapper.empty(); // clear old items
+                    $(".cart-box").addClass("active");
 
                     // Loop cart items
                     data.cart.forEach(function(item) {
@@ -817,24 +837,21 @@
                         <div class="cart-item-info">
                             <span class="d-block text-n100 text-base fw-medium">${item.name} ${item.qty}</span>
                             <span class="d-block text-n100 text-sm">Qty: ${item.qty}</span>
-                            <span class="d-block text-secondary2 text-base my-lg-2 my-1">₹${item.discount_price}</span>
+                            <span class="d-block text-secondary2 text-base my-lg-2 my-1">₹${item.item_total}</span>
                              <div class="quantity d-inline-flex align-items-center py-1 px-2 border border-n100-1 bg-n20 radius-4">
-                    <button class="quantityDecrement text-n100" data-id="${item.product_id}">
+                    <button class="quantityDecrement text-n100" data-id="${item.cart_id}">
                         <i class="ph ph-minus"></i>
                     </button>
                     <input type="text" value="${item.qty}" class="quantityValue border-0 p-0 outline-0 bg-n20" />
-                    <button class="quantityIncrement text-n100" data-id="${item.product_id}">
+                    <button class="quantityIncrement text-n100" data-id="${item.cart_id}">
                         <i class="ph ph-plus"></i>
                     </button>
                 </div>
                         </div>
                     </div>
                     <div class="d-flex flex-column gap-1 align-items-baseline justify-content-start">
-                        <button class="cart-item-remove text-xl" data-id="${item.product_id}" >
+                        <button class="cart-item-remove text-xl" data-id="${item.cart_id}" >
                             <i class="ph ph-trash"></i>
-                        </button>
-                        <button class="cart-item-edit text-xl">
-                            <i class="ph ph-pencil-simple-line"></i>
                         </button>
                     </div>
                 </div>
@@ -842,6 +859,8 @@
 
                         $wrapper.append(html);
                     });
+                    $('.cart-overall_total').text('₹' + data.overall_total);
+
                 } else {
                     showToast('error', data.message);
                 }
@@ -852,6 +871,36 @@
             },
             complete: function() {
                 // $btn.prop('disabled', false).text('ADD TO CART');
+            }
+        });
+    }
+    $(document).on("click", ".g_id_signin div[role=button]", function(e) {
+        e.preventDefault(); // stop default Google popup
+
+        prepareGoogleLogin(); // set redirect in session first
+    });
+
+    function prepareGoogleLogin() {
+        var redirectUrl = window.location.href;
+
+        $.ajax({
+            url: "../functions/set-redirect.php",
+            type: "POST",
+            data: {
+                redirect_url: redirectUrl
+            },
+            dataType: "json",
+            success: function(response) {
+                if (response.status === 'success') {
+                    console.log("Redirect session set ✅");
+                    // Now open Google login modal
+                    $("#googleLoginModal").show();
+                } else {
+                    console.error("Failed to set redirect:", response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("AJAX Error:", error);
             }
         });
     }

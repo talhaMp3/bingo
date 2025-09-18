@@ -6,6 +6,34 @@ $base_url = "http://localhost/bingo/";
 if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
     $base_url = "https://" . $_SERVER['HTTP_HOST'] . "/bingo/";
 }
+$cartTotal = 0;
+$wishlistTotal = 0;
+
+if (isset($_SESSION['user_id'])) {
+    $user_id = $_SESSION['user_id'];
+
+    // ✅ Cart total
+    $cart_sql = "SELECT SUM(qty) as total FROM cart WHERE user_id = ?";
+    $cart_stmt = $conn->prepare($cart_sql);
+    $cart_stmt->bind_param("i", $user_id);
+    $cart_stmt->execute();
+    $cart_stmt->bind_result($cart_total_result);
+    $cart_stmt->fetch();
+    $cart_stmt->close();
+
+    $cartTotal = $cart_total_result ?? 0;
+
+    // ✅ Wishlist total
+    $wishlist_sql = "SELECT COUNT(*) as total FROM wishlist WHERE user_id = ?";
+    $wishlist_stmt = $conn->prepare($wishlist_sql);
+    $wishlist_stmt->bind_param("i", $user_id);
+    $wishlist_stmt->execute();
+    $wishlist_stmt->bind_result($wishlist_total_result);
+    $wishlist_stmt->fetch();
+    $wishlist_stmt->close();
+
+    $wishlistTotal = $wishlist_total_result ?? 0;
+}
 ?>
 
 <head>
@@ -327,24 +355,319 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                             </ul>
                         </nav>
                         <!-- search bar area -->
-                        <div class="search-bar search-form-wrapper">
+                        <!-- search bar area -->
+                        <div class="search-bar search-form-wrapper position-relative">
                             <form
                                 action="#"
                                 class="header-search-form d-flex align-items-center gap-3 py-lg-3 py-2 px-xxl-6 px-md-4 px-3 radius-pill border border-n100-6 bg-n20 w-100 focus-secondary2">
                                 <input
                                     type="text"
+                                    id="searchInput"
                                     placeholder="Search Bikes, Gear & Accessories"
-                                    class="w-100 border-0 outline-0 bg-transparent" />
-                                <button type="submit" class="text-xl">
+                                    class="w-100 border-0 outline-0 bg-transparent"
+                                    autocomplete="off" />
+                                <button type="submit" class="text-xl border-0 bg-transparent p-0">
                                     <i class="ph ph-magnifying-glass"></i>
                                 </button>
                             </form>
+
                             <button
                                 type="button"
                                 class="search-close-btn text-2xl position-absolute top-0 end-0 translate-middle me-5 mt-10 p-sm-2 p-1 bg-primary2 text-n0 d-xl-none">
                                 <i class="ph ph-x"></i>
                             </button>
+
+                            <!-- Search Results Container -->
+                            <div id="search-results"
+                                class="position-absolute top-100 start-0 mt-2 w-100 bg-white border rounded shadow-lg"
+                                style="display: none; z-index: 1000; max-height: 400px; overflow-y: auto;">
+
+                                <!-- Loading State -->
+                                <div id="loading-state" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Searching...</span>
+                                    </div>
+                                    <p class="mt-2 mb-0 text-muted">Searching...</p>
+                                </div>
+
+                                <!-- No Results State -->
+                                <div id="no-results" class="text-center py-4" style="display: none;">
+                                    <i class="ph ph-magnifying-glass text-muted" style="font-size: 2rem;"></i>
+                                    <p class="mt-2 mb-0 text-muted">No results found for "<span id="search-term"></span>"</p>
+                                </div>
+
+                                <!-- Static Suggestions (shown when empty or no query) -->
+                                <div id="static-suggestions" class="p-3">
+                                    <p class="fw-bold mb-3 text-secondary fs-6">Popular Searches</p>
+                                    <div class="row g-0">
+                                        <div class="col-12">
+                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Mountain Bike">
+                                                <span class="me-3">🚴</span>
+                                                <span>Mountain Bike</span>
+                                                <small class="ms-auto text-muted">Popular</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Road Bike">
+                                                <span class="me-3">🚴‍♀️</span>
+                                                <span>Road Bike</span>
+                                                <small class="ms-auto text-muted">Trending</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Cycling Helmet">
+                                                <span class="me-3">⚙️</span>
+                                                <span>Cycling Helmet</span>
+                                                <small class="ms-auto text-muted">Safety</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Riding Glasses">
+                                                <span class="me-3">🕶️</span>
+                                                <span>Riding Glasses</span>
+                                                <small class="ms-auto text-muted">Accessories</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Bike Backpack">
+                                                <span class="me-3">🎒</span>
+                                                <span>Bike Backpack</span>
+                                                <small class="ms-auto text-muted">Gear</small>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Dynamic Search Results (for future AJAX) -->
+                                <div id="search-results-content" style="display: none;">
+                                    <!-- Results will be populated here via AJAX -->
+                                </div>
+                            </div>
                         </div>
+
+                        <style>
+                            .hover-bg-light:hover {
+                                background-color: #f8f9fa !important;
+                                transition: background-color 0.15s ease-in-out;
+                            }
+
+                            .suggestion-item:hover {
+                                transform: translateX(2px);
+                                transition: transform 0.15s ease-in-out;
+                            }
+
+                            #search-results {
+                                border: 1px solid #dee2e6;
+                                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+                            }
+
+                            .search-bar input:focus {
+                                box-shadow: none !important;
+                            }
+                        </style>
+
+                        <script>
+                            class SearchManager {
+                                constructor() {
+                                    this.searchInput = document.getElementById('searchInput');
+                                    this.searchResults = document.getElementById('search-results');
+                                    this.staticSuggestions = document.getElementById('static-suggestions');
+                                    this.loadingState = document.getElementById('loading-state');
+                                    this.noResults = document.getElementById('no-results');
+                                    this.searchResultsContent = document.getElementById('search-results-content');
+                                    this.searchTerm = document.getElementById('search-term');
+
+                                    this.debounceTimer = null;
+                                    this.minQueryLength = 2;
+                                    this.debounceDelay = 300;
+
+                                    this.init();
+                                }
+
+                                init() {
+                                    // Input event with debouncing
+                                    this.searchInput.addEventListener('input', (e) => {
+                                        clearTimeout(this.debounceTimer);
+                                        this.debounceTimer = setTimeout(() => {
+                                            this.handleSearch(e.target.value.trim());
+                                        }, this.debounceDelay);
+                                    });
+
+                                    // Focus event - show suggestions
+                                    this.searchInput.addEventListener('focus', () => {
+                                        if (this.searchInput.value.trim().length === 0) {
+                                            this.showStaticSuggestions();
+                                        } else {
+                                            this.handleSearch(this.searchInput.value.trim());
+                                        }
+                                    });
+
+                                    // Click outside to close
+                                    document.addEventListener('click', (e) => {
+                                        if (!this.searchInput.contains(e.target) && !this.searchResults.contains(e.target)) {
+                                            this.hideResults();
+                                        }
+                                    });
+
+                                    // Handle suggestion clicks
+                                    this.searchResults.addEventListener('click', (e) => {
+                                        const suggestionItem = e.target.closest('.suggestion-item');
+                                        if (suggestionItem) {
+                                            e.preventDefault();
+                                            const value = suggestionItem.dataset.value;
+                                            this.selectSuggestion(value);
+                                        }
+                                    });
+
+                                    // Handle form submission
+                                    this.searchInput.closest('form').addEventListener('submit', (e) => {
+                                        e.preventDefault();
+                                        this.performSearch(this.searchInput.value.trim());
+                                    });
+
+                                    // Keyboard navigation (future enhancement)
+                                    this.searchInput.addEventListener('keydown', (e) => {
+                                        this.handleKeyNavigation(e);
+                                    });
+                                }
+
+                                handleSearch(query) {
+                                    if (query.length === 0) {
+                                        this.showStaticSuggestions();
+                                        return;
+                                    }
+
+                                    if (query.length < this.minQueryLength) {
+                                        this.hideResults();
+                                        return;
+                                    }
+
+                                    // Show loading state
+                                    this.showLoadingState();
+
+                                    // Simulate search delay (replace with actual AJAX call)
+                                    setTimeout(() => {
+                                        this.performStaticSearch(query);
+                                    }, 500);
+                                }
+
+                                performStaticSearch(query) {
+                                    // Static search logic (replace with AJAX call later)
+                                    const staticData = [
+                                        'Mountain Bike', 'Road Bike', 'Hybrid Bike', 'Electric Bike',
+                                        'Cycling Helmet', 'Bike Lock', 'Riding Glasses', 'Bike Lights',
+                                        'Bike Backpack', 'Water Bottle', 'Bike Pump', 'Cycling Shorts'
+                                    ];
+
+                                    const results = staticData.filter(item =>
+                                        item.toLowerCase().includes(query.toLowerCase())
+                                    );
+
+                                    if (results.length > 0) {
+                                        this.showSearchResults(results, query);
+                                    } else {
+                                        this.showNoResults(query);
+                                    }
+                                }
+
+                                // Future method for AJAX search
+                                async performAjaxSearch(query) {
+                                    try {
+                                        // Example AJAX structure for future implementation
+                                        /*
+                                        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                                        const data = await response.json();
+                                        
+                                        if (data.results && data.results.length > 0) {
+                                            this.showSearchResults(data.results, query);
+                                        } else {
+                                            this.showNoResults(query);
+                                        }
+                                        */
+                                    } catch (error) {
+                                        console.error('Search error:', error);
+                                        this.showNoResults(query);
+                                    }
+                                }
+
+                                showStaticSuggestions() {
+                                    this.hideAllStates();
+                                    this.staticSuggestions.style.display = 'block';
+                                    this.searchResults.style.display = 'block';
+                                }
+
+                                showLoadingState() {
+                                    this.hideAllStates();
+                                    this.loadingState.style.display = 'block';
+                                    this.searchResults.style.display = 'block';
+                                }
+
+                                showNoResults(query) {
+                                    this.hideAllStates();
+                                    this.searchTerm.textContent = query;
+                                    this.noResults.style.display = 'block';
+                                    this.searchResults.style.display = 'block';
+                                }
+
+                                showSearchResults(results, query) {
+                                    this.hideAllStates();
+
+                                    // Generate results HTML
+                                    let resultsHTML = `<div class="p-3">
+            <p class="fw-bold mb-3 text-secondary fs-6">Search Results for "${query}"</p>
+            <div class="row g-0">`;
+
+                                    results.forEach(result => {
+                                        resultsHTML += `
+                <div class="col-12">
+                    <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="${result}">
+                        <span class="me-3">🔍</span>
+                        <span>${result}</span>
+                    </a>
+                </div>`;
+                                    });
+
+                                    resultsHTML += '</div></div>';
+
+                                    this.searchResultsContent.innerHTML = resultsHTML;
+                                    this.searchResultsContent.style.display = 'block';
+                                    this.searchResults.style.display = 'block';
+                                }
+
+                                hideAllStates() {
+                                    this.staticSuggestions.style.display = 'none';
+                                    this.loadingState.style.display = 'none';
+                                    this.noResults.style.display = 'none';
+                                    this.searchResultsContent.style.display = 'none';
+                                }
+
+                                hideResults() {
+                                    this.searchResults.style.display = 'none';
+                                }
+
+                                selectSuggestion(value) {
+                                    this.searchInput.value = value;
+                                    this.hideResults();
+                                    this.performSearch(value);
+                                }
+
+                                performSearch(query) {
+                                    console.log('Performing search for:', query);
+                                    // Add your search logic here
+                                }
+
+                                handleKeyNavigation(e) {
+                                    // Future implementation for arrow key navigation
+                                    // This would allow users to navigate through suggestions with keyboard
+                                }
+                            }
+
+                            // Initialize search manager when DOM is loaded
+                            document.addEventListener('DOMContentLoaded', () => {
+                                new SearchManager();
+                            });
+                        </script>
+
 
                         <div
                             class="nav-btns d-flex align-items-center gap-xl-4 gap-lg-3 gap-4">
@@ -365,27 +688,39 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                             </a>
 
                             <!-- wishlist btn -->
-                            <a
-                                href="wishlist.html"
-                                class="wishlist-btn icon-36px position-relative text-n100 hover-text-secondary2">
-                                <span
-                                    class="badge radius-pill text-n0 text-sm fw-medium bg-secondary2 position-absolute top-50 start-100 translate-middle z-1 mt-n3">0</span>
-                                <span class="text-2xl">
-                                    <i class="ph ph-heart"></i>
-                                </span>
-                            </a>
                             <?php
                             if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != '') {
 
                                 $cartBtClass = "fetch-cart-btn cart-btn";
+                            ?>
+                                <a
+                                    href="wishlist.html"
+                                    class="wishlist-btn icon-36px position-relative text-n100 hover-text-secondary2 <?= $cartBtClass ?>">
+                                    <span class="badge radius-pill text-n0 text-sm fw-medium bg-secondary2 position-absolute top-50 start-100 translate-middle z-1 mt-n3  whishlist_count"><?= $wishlistTotal ?></span>
+                                    <span class="text-2xl">
+                                        <i class="ph ph-heart"></i>
+                                    </span>
+                                </a>
+                            <?php
                             } else {
-                                $cartBtClass = "fetch-cart-btn";
+                                $cartBtClass = "fetch-cart-btn ";
+                            ?>
+                                <button
+                                    class="wishlist-btn icon-36px position-relative text-n100 hover-text-secondary2 <?= $cartBtClass ?>">
+                                    <span class="badge radius-pill text-n0 text-sm fw-medium bg-secondary2 position-absolute top-50 start-100 translate-middle z-1 mt-n3  whishlist_count"><?= $wishlistTotal ?></span>
+                                    <span class="text-2xl">
+                                        <i class="ph ph-heart"></i>
+                                    </span>
+                                </button>
+                            <?php
                             }
                             ?>
+
+
                             <!-- cart btn -->
                             <button class="<?= $cartBtClass ?> icon-36px position-relative text-n100 hover-text-secondary2">
                                 <span
-                                    class="badge radius-pill text-n0 text-sm fw-medium bg-secondary2 position-absolute top-50 start-100 translate-middle z-1 mt-n3">0</span>
+                                    class="badge radius-pill text-n0 text-sm fw-medium bg-secondary2 position-absolute top-50 start-100 translate-middle z-1 mt-n3 card-count"><?= $cartTotal ?></span>
                                 <span class="text-2xl">
                                     <i class="ph ph-shopping-cart"></i>
                                 </span>
@@ -516,12 +851,12 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                             <div class="cart-total-wrapper mb-xxl-6 mb-4">
                                 <div class="cart-total d-flex justify-content-between">
                                     <span class="text-n100 text-base fw-medium">Subtotal</span>
-                                    <span class="text-n100 text-base fw-medium">$299.00</span>
+                                    <span class="text-n100 text-base fw-medium cart-overall_total">$299.00</span>
                                 </div>
-                                <div class="cart-total d-flex justify-content-between">
+                                <!-- <div class="cart-total d-flex justify-content-between">
                                     <span class="text-n100 text-base fw-medium">Shipping</span>
                                     <span class="text-n100 text-base fw-medium">$0.00</span>
-                                </div>
+                                </div> -->
                             </div>
                             <div>
                                 <label class="input-checkbox mb-lg-6 mb-4">
@@ -533,11 +868,11 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
                                             class="text-decoration-underline">Terms & Conditions</a></span>
                                 </label>
                                 <div class="d-grid gap-4">
-                                    <a
+                                    <!-- <a
                                         href="cart.html"
-                                        class="d-block text-center text-n100 fw-medium py-lg-3 py-2 px-lg-6 px-4 border border-n100 bg-n0 hover-text-n0 hover-bg-n100">View Cart</a>
+                                        class="d-block text-center text-n100 fw-medium py-lg-3 py-2 px-lg-6 px-4 border border-n100 bg-n0 hover-text-n0 hover-bg-n100">View Cart</a> -->
                                     <a
-                                        href="checkout.html"
+                                        href="checkout.php"
                                         class="d-block text-center text-n0 fw-medium py-lg-3 py-2 px-lg-6 px-4 border-0 bg-secondary2 hover-text-n0 hover-bg-n100">Checkout</a>
                                 </div>
                             </div>

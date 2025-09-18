@@ -2,6 +2,10 @@
 
 require dirname(__DIR__) . '../vendor/autoload.php';
 
+// ✅ Load .env first
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
+
 $host = $_ENV['DB_HOST'] ?? '127.0.0.1';
 $user = $_ENV['DB_USER'] ?? 'root';
 $password = $_ENV['DB_PASSWORD'] ?? '';
@@ -14,20 +18,16 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
+mysqli_set_charset($conn, "utf8");
 
-
+// ✅ Setup Whoops
 $whoops = new \Whoops\Run;
 $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
 
-if (!empty($_ENV['APP_DEBUG']) && $_ENV['APP_DEBUG'] == true) {
+if (!empty($_ENV['APP_DEBUG']) && $_ENV['APP_DEBUG'] === 'true' && (!isset($_ENV['APP_ENV']) || $_ENV['APP_ENV'] === 'local')) {
     $whoops->register();
 }
 
-mysqli_set_charset($conn, "utf8");
-
-
-$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-$dotenv->load();
 
 
 function log_activity($conn, $type, $action, $message, $user_type = 'admin', $user_id = null)
