@@ -797,6 +797,7 @@
 
 
     $('.fetch-cart-btn').on('click', function() {
+        $(".cart-box").addClass("active");
         fetchCart();
     });
 
@@ -820,7 +821,7 @@
                     // Target wrapper
                     let $wrapper = $(".cart-items");
                     $wrapper.empty(); // clear old items
-                    $(".cart-box").addClass("active");
+
 
                     // Loop cart items
                     data.cart.forEach(function(item) {

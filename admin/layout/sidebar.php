@@ -177,51 +177,95 @@
         }
 
         .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 10px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 20px; */
         }
     </style>
 </head>
 
+
 <body>
     <!-- Sidebar Navigation -->
-    <nav class="sidebar">
+    <?php
+    $currentPage = basename($_SERVER['PHP_SELF']);
+    // Example: "dashboard.php", "categories.php"
+    ?>
+
+    <nav class="sidebar bg-dark text-white vh-100">
         <div class="p-3">
             <h4 class="text-white mb-4">
                 <i class="bi bi-bicycle"></i> Cycle Admin
             </h4>
         </div>
         <ul class="nav flex-column">
+            <!-- Dashboard -->
             <li class="nav-item">
-                <a class="nav-link" href="dashboard.html">
+                <a class="nav-link <?= $currentPage == 'dashboard.php' ? 'active' : '' ?>" href="dashboard.php">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
+
+            <!-- Categories -->
             <li class="nav-item">
-                <a class="nav-link active" href="categories.html">
+                <a class="nav-link <?= $currentPage == 'categories.php' ? 'active' : '' ?>" href="categories.php">
                     <i class="bi bi-tags"></i> Categories
                 </a>
             </li>
+
+            <!-- Products -->
             <li class="nav-item">
-                <a class="nav-link" href="products.html">
+                <a class="nav-link <?= $currentPage == 'products.php' ? 'active' : '' ?>" href="products.php">
                     <i class="bi bi-box-seam"></i> Products
                 </a>
             </li>
+
+            <!-- Orders -->
             <li class="nav-item">
-                <a class="nav-link" href="#orders">
+                <a class="nav-link <?= $currentPage == 'orders.php' ? 'active' : '' ?>" href="orders.php">
                     <i class="bi bi-cart-check"></i> Orders
                 </a>
             </li>
+
+            <!-- Customers -->
             <li class="nav-item">
-                <a class="nav-link" href="#customers">
+                <a class="nav-link <?= $currentPage == 'customers.php' ? 'active' : '' ?>" href="customers.php">
                     <i class="bi bi-people"></i> Customers
                 </a>
             </li>
+
+            <!-- Landing Page -->
             <li class="nav-item">
-                <a class="nav-link" href="#settings">
+                <a class="nav-link <?= $currentPage == 'landing_page.php' ? 'active' : '' ?>" href="landing_page.php">
+                    <i class="bi bi-layers"></i> Landing Page
+                </a>
+            </li>
+
+            <!-- Hero Section -->
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'hero_section.php' ? 'active' : '' ?>" href="hero_section.php">
+                    <i class="bi bi-image"></i> Hero Section
+                </a>
+            </li>
+
+            <!-- Hero Banners -->
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'hero_banners.php' ? 'active' : '' ?>" href="hero_banners.php">
+                    <i class="bi bi-images"></i> Hero Banners
+                </a>
+            </li>
+
+            <!-- Brand Logos -->
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'brand_logos.php' ? 'active' : '' ?>" href="brand_logos.php">
+                    <i class="bi bi-award"></i> Brand Logos
+                </a>
+            </li>
+            <!-- Settings -->
+            <li class="nav-item">
+                <a class="nav-link <?= $currentPage == 'settings.php' ? 'active' : '' ?>" href="settings.php">
                     <i class="bi bi-gear"></i> Settings
                 </a>
             </li>

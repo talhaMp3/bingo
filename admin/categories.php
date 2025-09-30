@@ -428,7 +428,7 @@ include_once('./layout/sidebar.php');
                                             </div>
                                         </td>
                                         <td>
-                                            <!-- <span class="badge bg-info"><?= $category['product_count'] ?></span> -->
+
                                             <span class="badge bg-info"><?= rand(20, 89) ?></span>
                                         </td>
                                         <td>

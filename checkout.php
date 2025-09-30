@@ -1,3 +1,618 @@
+<?php
+include './include/connection.php';
+require_once './vendor/autoload.php';
+require_once './functions/razorpay_config.php';
+
+session_start();
+
+$user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
+
+if (!$user_id) {
+    die("Please login to continue checkout");
+}
+
+// Get user's saved addresses
+$addresses_query = "SELECT * FROM customer_addresses WHERE user_id = ? ORDER BY is_default DESC, id DESC";
+$stmt = $conn->prepare($addresses_query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$addresses_result = $stmt->get_result();
+$saved_addresses = [];
+while ($address = mysqli_fetch_assoc($addresses_result)) {
+    $saved_addresses[] = $address;
+}
+
+// Get cart items for the user
+$products_query = "
+    SELECT 
+        c.id AS cart_id,
+        c.qty,
+        c.price AS cart_price,
+        p.id AS product_id,
+        p.name AS product_name,
+        p.slug AS product_slug,
+        p.image AS product_images,
+        p.price AS product_price,
+        p.discount_price AS product_discount,
+        v.id AS variant_id,
+        v.variant_name,
+        v.price AS variant_price,
+        v.discount_price AS variant_discount,
+        v.image AS variant_image,
+        cat.id AS category_id,
+        cat.name AS category_name,
+        cat.slug AS category_slug,
+        cat.image AS category_image
+    FROM cart c
+    LEFT JOIN products p ON c.product_id = p.id
+    LEFT JOIN product_variants v ON c.variant_id = v.id
+    LEFT JOIN categories cat ON p.category_id = cat.id
+    WHERE c.user_id = ?
+";
+
+$stmt = $conn->prepare($products_query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$carts = $stmt->get_result();
+
+// Calculate totals
+$subtotal = 0;
+$cart_items = [];
+while ($item = mysqli_fetch_assoc($carts)) {
+    $cart_items[] = $item;
+    $item_price = $item['variant_id'] ?
+        ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
+    $subtotal += $item_price * $item['qty'];
+}
+
+mysqli_data_seek($carts, 0);
+
+$tax_rate = 0.18; // 18% GST
+$tax_amount = $subtotal * $tax_rate;
+$total_amount = $subtotal + $tax_amount;
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+
+    switch ($_POST['action']) {
+        case 'save_address':
+            echo json_encode(saveAddress($_POST, $user_id, $conn));
+            exit;
+
+        case 'apply_coupon':
+            echo json_encode(applyCoupon($_POST['coupon_code'], $subtotal, $user_id, $conn));
+            exit;
+
+        case 'create_order':
+            echo json_encode(createOrder($_POST, $cart_items, $user_id, $conn));
+            exit;
+
+        case 'process_payment':
+            echo json_encode(processPayment($_POST, $conn));
+            exit;
+    }
+}
+
+function saveAddress($data, $user_id, $conn)
+{
+    try {
+        $required_fields = ['full_name', 'phone', 'address_line1', 'city', 'state', 'postal_code'];
+        foreach ($required_fields as $field) {
+            if (empty($data[$field])) {
+                return ['status' => 'error', 'message' => 'Please fill all required fields'];
+            }
+        }
+
+        if (isset($data['is_default']) && $data['is_default'] == '1') {
+            $stmt = $conn->prepare("UPDATE customer_addresses SET is_default = 0 WHERE user_id = ?");
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+        }
+
+        $stmt = $conn->prepare("INSERT INTO customer_addresses (user_id, full_name, phone, address_line1, address_line2, city, state, country, postal_code, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        $is_default = isset($data['is_default']) ? 1 : 0;
+        $stmt->bind_param(
+            "issssssssi",
+            $user_id,
+            $data['full_name'],
+            $data['phone'],
+            $data['address_line1'],
+            $data['address_line2'] ?? '',
+            $data['city'],
+            $data['state'],
+            $data['country'] ?? 'India',
+            $data['postal_code'],
+            $is_default
+        );
+
+        if ($stmt->execute()) {
+            return ['status' => 'success', 'message' => 'Address saved successfully', 'address_id' => $conn->insert_id];
+        } else {
+            return ['status' => 'error', 'message' => 'Failed to save address'];
+        }
+    } catch (Exception $e) {
+        return ['status' => 'error', 'message' => 'Error saving address: ' . $e->getMessage()];
+    }
+}
+
+function applyCoupon($coupon_code, $subtotal, $user_id, $conn)
+{
+    if (empty($coupon_code)) {
+        return ['status' => 'error', 'message' => 'Please enter a coupon code'];
+    }
+
+    $coupon_query = "SELECT * FROM coupons WHERE code = ? AND status = 'active' 
+                     AND valid_from <= NOW() AND valid_to >= NOW() 
+                     AND min_order_value <= ?";
+
+    $stmt = $conn->prepare($coupon_query);
+    $stmt->bind_param("sd", $coupon_code, $subtotal);
+    $stmt->execute();
+    $coupon = $stmt->get_result()->fetch_assoc();
+
+    if (!$coupon) {
+        return ['status' => 'error', 'message' => 'Invalid or expired coupon'];
+    }
+
+    // Calculate discount
+    if ($coupon['discount_type'] === 'percentage') {
+        $discount = ($subtotal * $coupon['amount']) / 100;
+        if (isset($coupon['max_discount']) && $discount > $coupon['max_discount']) {
+            $discount = $coupon['max_discount'];
+        }
+    } else {
+        $discount = $coupon['amount'];
+    }
+
+    $discount = min($discount, $subtotal);
+
+    return [
+        'status' => 'success',
+        'discount' => $discount,
+        'coupon_id' => $coupon['id'],
+        'message' => 'Coupon applied successfully'
+    ];
+}
+function createOrder($data, $cart_items, $user_id, $conn)
+{
+    // Ensure SDK loaded and config available
+    if (!defined('RAZORPAY_KEY_ID') || !defined('RAZORPAY_KEY_SECRET')) {
+        return ['status' => 'error', 'message' => 'Razorpay not configured'];
+    }
+
+    // Basic validations
+    if (empty($cart_items)) {
+        return ['status' => 'error', 'message' => 'Your cart is empty'];
+    }
+
+    // Get shipping address (reuse your helper)
+    $shipping_address = getShippingAddress($data, $user_id, $conn);
+    if ($shipping_address['status'] === 'error') {
+        return $shipping_address;
+    }
+
+    try {
+        $conn->begin_transaction();
+
+        // Calculate subtotal
+        $subtotal = 0;
+        foreach ($cart_items as $item) {
+            $item_price = $item['variant_id'] ?
+                ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
+            $subtotal += $item_price * $item['qty'];
+        }
+
+        $discount = 0;
+        $coupon_id = null;
+        if (!empty($data['coupon_code'])) {
+            $coupon_result = applyCoupon($data['coupon_code'], $subtotal, $user_id, $conn);
+            if ($coupon_result['status'] === 'success') {
+                $discount = $coupon_result['discount'];
+                $coupon_id = $coupon_result['coupon_id'];
+            }
+        }
+
+        $tax_amount = ($subtotal - $discount) * 0.18;
+        $total_amount = $subtotal - $discount + $tax_amount;
+
+        // Insert order into DB (payment_method will be updated below)
+        $order_query = "INSERT INTO orders (user_id, total_amount, status, payment_status, shipping_address, created_at) 
+                        VALUES (?, ?, 'pending', 'pending', ?, NOW())";
+        $shipping_address_json = json_encode($shipping_address['data']);
+        $stmt = $conn->prepare($order_query);
+        $stmt->bind_param("ids", $user_id, $total_amount, $shipping_address_json);
+        $stmt->execute();
+        $order_id = $conn->insert_id;
+
+        // Insert order items (unchanged)
+        $item_query = "INSERT INTO order_items (order_id, product_id, variant_id, qty, price) VALUES (?, ?, ?, ?, ?)";
+        $stmt_item = $conn->prepare($item_query);
+        foreach ($cart_items as $item) {
+            $item_price = $item['variant_id'] ?
+                ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
+            $variant_id = $item['variant_id'] ?: null;
+            $stmt_item->bind_param("iiiid", $order_id, $item['product_id'], $variant_id, $item['qty'], $item_price);
+            $stmt_item->execute();
+        }
+
+        // If coupon applied, record usage (unchanged)
+        if ($coupon_id) {
+            $usage_query = "INSERT INTO coupon_usage (coupon_id, user_id, order_id, used_at) VALUES (?, ?, ?, NOW())";
+            $stmt_usage = $conn->prepare($usage_query);
+            $stmt_usage->bind_param("iii", $coupon_id, $user_id, $order_id);
+            $stmt_usage->execute();
+        }
+
+        // If user wants online payment, create Razorpay order now
+        $razorpay_order_id = null;
+        $payment_method = $data['payment_method'] ?? 'cod';
+
+        if ($payment_method === 'online') {
+            // Use SDK to create order on Razorpay
+            $api = new \Razorpay\Api\Api(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
+
+            $razorpayOrder = $api->order->create([
+                'receipt' => "rcpt_{$order_id}",
+                'amount' => intval(round($total_amount * 100)), // amount in paise
+                'currency' => 'INR',
+                'payment_capture' => 1
+            ]);
+
+            $razorpay_order_id = $razorpayOrder['id'] ?? null;
+
+            // Store razorpay_order_id and payment_method in DB
+            $update_order = "UPDATE orders SET razorpay_order_id = ?, payment_method = ? WHERE id = ?";
+            $stmt2 = $conn->prepare($update_order);
+            $stmt2->bind_param("ssi", $razorpay_order_id, $payment_method, $order_id);
+            $stmt2->execute();
+        } else {
+            // store payment_method (cod)
+            $update_order = "UPDATE orders SET payment_method = ? WHERE id = ?";
+            $stmt2 = $conn->prepare($update_order);
+            $stmt2->bind_param("si", $payment_method, $order_id);
+            $stmt2->execute();
+        }
+
+        $conn->commit();
+
+        // Return razorpay_order_id and public key when online, so client opens checkout
+        return [
+            'status' => 'success',
+            'order_id' => $order_id,
+            'amount' => $total_amount,
+            'razorpay_order_id' => $razorpay_order_id,
+            'razorpay_key' => RAZORPAY_KEY_ID,
+            'message' => 'Order created successfully'
+        ];
+    } catch (Exception $e) {
+        $conn->rollback();
+        return ['status' => 'error', 'message' => 'Failed to create order: ' . $e->getMessage()];
+    }
+}
+
+/*
+function createOrder($data, $cart_items, $user_id, $conn)
+{
+    if (empty($cart_items)) {
+        return ['status' => 'error', 'message' => 'Your cart is empty'];
+    }
+
+    // Get shipping address
+    $shipping_address = getShippingAddress($data, $user_id, $conn);
+    if ($shipping_address['status'] === 'error') {
+        return $shipping_address;
+    }
+
+    try {
+        $conn->begin_transaction();
+
+        // Calculate totals
+        $subtotal = 0;
+        foreach ($cart_items as $item) {
+            $item_price = $item['variant_id'] ?
+                ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
+            $subtotal += $item_price * $item['qty'];
+        }
+
+        $discount = 0;
+        $coupon_id = null;
+
+        // Apply coupon if provided
+        if (!empty($data['coupon_code'])) {
+            $coupon_result = applyCoupon($data['coupon_code'], $subtotal, $user_id, $conn);
+            if ($coupon_result['status'] === 'success') {
+                $discount = $coupon_result['discount'];
+                $coupon_id = $coupon_result['coupon_id'];
+            }
+        }
+
+        $tax_amount = ($subtotal - $discount) * 0.18;
+        $total_amount = $subtotal - $discount + $tax_amount;
+
+        // Create order
+        $order_query = "INSERT INTO orders (user_id, total_amount, status, payment_status, shipping_address, created_at) 
+                        VALUES (?, ?, 'pending', 'pending', ?, NOW())";
+
+        $shipping_address_json = json_encode($shipping_address['data']);
+        $stmt = $conn->prepare($order_query);
+        $stmt->bind_param("ids", $user_id, $total_amount, $shipping_address_json);
+        $stmt->execute();
+        $order_id = $conn->insert_id;
+
+        // Add order items
+        $item_query = "INSERT INTO order_items (order_id, product_id, variant_id, qty, price) VALUES (?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($item_query);
+
+        foreach ($cart_items as $item) {
+            $item_price = $item['variant_id'] ?
+                ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
+            $variant_id = $item['variant_id'] ?: null;
+
+            $stmt->bind_param("iiiid", $order_id, $item['product_id'], $variant_id, $item['qty'], $item_price);
+            $stmt->execute();
+        }
+
+        // Record coupon usage if applied
+        if ($coupon_id) {
+            $usage_query = "INSERT INTO coupon_usage (coupon_id, user_id, order_id, used_at) VALUES (?, ?, ?, NOW())";
+            $stmt = $conn->prepare($usage_query);
+            $stmt->bind_param("iii", $coupon_id, $user_id, $order_id);
+            $stmt->execute();
+        }
+
+        $conn->commit();
+
+        return [
+            'status' => 'success',
+            'order_id' => $order_id,
+            'amount' => $total_amount,
+            'message' => 'Order created successfully'
+        ];
+    } catch (Exception $e) {
+        $conn->rollback();
+        return ['status' => 'error', 'message' => 'Failed to create order: ' . $e->getMessage()];
+    }
+}
+*/
+function getShippingAddress($data, $user_id, $conn)
+{
+    if (isset($data['selected_address']) && !empty($data['selected_address'])) {
+        // Using saved address
+        $address_query = "SELECT * FROM customer_addresses WHERE id = ? AND user_id = ?";
+        $stmt = $conn->prepare($address_query);
+        $stmt->bind_param("ii", $data['selected_address'], $user_id);
+        $stmt->execute();
+        $address_result = $stmt->get_result()->fetch_assoc();
+
+        if (!$address_result) {
+            return ['status' => 'error', 'message' => 'Invalid address selected'];
+        }
+
+        return [
+            'status' => 'success',
+            'data' => [
+                'full_name' => $address_result['full_name'],
+                'phone' => $address_result['phone'],
+                'address_line1' => $address_result['address_line1'],
+                'address_line2' => $address_result['address_line2'],
+                'city' => $address_result['city'],
+                'state' => $address_result['state'],
+                'country' => $address_result['country'],
+                'postal_code' => $address_result['postal_code']
+            ]
+        ];
+    } else {
+        // Using form data for new address
+        $required_fields = ['full_name', 'phone', 'address_line1', 'city', 'state', 'postal_code'];
+        foreach ($required_fields as $field) {
+            if (empty($data[$field])) {
+                return ['status' => 'error', 'message' => 'Please provide complete address information'];
+            }
+        }
+
+        return [
+            'status' => 'success',
+            'data' => [
+                'full_name' => $data['full_name'],
+                'phone' => $data['phone'],
+                'address_line1' => $data['address_line1'],
+                'address_line2' => $data['address_line2'] ?? '',
+                'city' => $data['city'],
+                'state' => $data['state'],
+                'country' => $data['country'] ?? 'India',
+                'postal_code' => $data['postal_code']
+            ]
+        ];
+    }
+}
+
+function processPayment($data, $conn)
+{
+    try {
+        $order_id = intval($data['order_id']);
+        $payment_method = $data['payment_method'] ?? 'cod';
+
+        // Fetch order (must be pending)
+        $order_check = "SELECT * FROM orders WHERE id = ? AND payment_status = 'pending'";
+        $stmt = $conn->prepare($order_check);
+        $stmt->bind_param("i", $order_id);
+        $stmt->execute();
+        $order = $stmt->get_result()->fetch_assoc();
+
+        if (!$order) {
+            return ['status' => 'error', 'message' => 'Invalid order or order already processed'];
+        }
+
+        $conn->begin_transaction();
+
+        if ($payment_method === 'cod') {
+            // COD flow (same as yours)
+            $update_order = "UPDATE orders SET status = 'confirmed', payment_status = 'pending', updated_at = NOW() WHERE id = ?";
+            $stmt = $conn->prepare($update_order);
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+
+            $payment_query = "INSERT INTO payments (order_id, payment_method, amount, status, created_at) 
+                              VALUES (?, 'cod', ?, 'pending', NOW())";
+            $stmt = $conn->prepare($payment_query);
+            $stmt->bind_param("id", $order_id, $order['total_amount']);
+            $stmt->execute();
+
+            // Clear cart
+            $clear_cart = "DELETE FROM cart WHERE user_id = ?";
+            $stmt = $conn->prepare($clear_cart);
+            $stmt->bind_param("i", $order['user_id']);
+            $stmt->execute();
+
+            $conn->commit();
+
+            return [
+                'status' => 'success',
+                'message' => 'Order confirmed! You can pay cash on delivery.',
+                'order_id' => $order_id,
+                'redirect' => 'order-success.php?order=' . $order_id
+            ];
+        } else {
+            // Online payment via Razorpay: verify signature
+            if (empty($data['razorpay_payment_id']) || empty($data['razorpay_signature'])) {
+                $conn->rollback();
+                return ['status' => 'error', 'message' => 'Missing Razorpay payment data'];
+            }
+
+            // Ensure server-stored razorpay_order_id exists for this order
+            $stored_rzp_order_id = $order['razorpay_order_id'] ?? null;
+            if (!$stored_rzp_order_id) {
+                $conn->rollback();
+                return ['status' => 'error', 'message' => 'No Razorpay order id stored for this order'];
+            }
+
+            // Verify signature using SDK helper
+            $api = new \Razorpay\Api\Api(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
+
+            $attributes = [
+                'razorpay_order_id' => $stored_rzp_order_id,
+                'razorpay_payment_id' => $data['razorpay_payment_id'],
+                'razorpay_signature' => $data['razorpay_signature']
+            ];
+
+            try {
+                $api->utility->verifyPaymentSignature($attributes);
+
+                // Signature verified -> mark order paid
+                $update_order = "UPDATE orders SET status = 'paid', payment_status = 'paid', updated_at = NOW() WHERE id = ?";
+                $stmt = $conn->prepare($update_order);
+                $stmt->bind_param("i", $order_id);
+                $stmt->execute();
+
+                $payment_query = "INSERT INTO payments (order_id, payment_method, amount, status, transaction_id, created_at) 
+                                  VALUES (?, 'razorpay', ?, 'success', ?, NOW())";
+                $stmt = $conn->prepare($payment_query);
+                $stmt->bind_param("ids", $order_id, $order['total_amount'], $data['razorpay_payment_id']);
+                $stmt->execute();
+
+                // Clear cart
+                $clear_cart = "DELETE FROM cart WHERE user_id = ?";
+                $stmt = $conn->prepare($clear_cart);
+                $stmt->bind_param("i", $order['user_id']);
+                $stmt->execute();
+
+                $conn->commit();
+
+                return [
+                    'status' => 'success',
+                    'message' => 'Payment successful! Your order has been confirmed.',
+                    'order_id' => $order_id,
+                    'redirect' => 'order-success.php?order=' . $order_id
+                ];
+            } catch (\Razorpay\Api\Errors\SignatureVerificationError $e) {
+                $conn->rollback();
+                return ['status' => 'error', 'message' => 'Signature verification failed: ' . $e->getMessage()];
+            }
+        }
+    } catch (Exception $e) {
+        $conn->rollback();
+        return ['status' => 'error', 'message' => 'Payment processing failed: ' . $e->getMessage()];
+    }
+}
+
+/*
+function processPayment($data, $conn)
+{
+    try {
+        $order_id = intval($data['order_id']);
+        $payment_method = $data['payment_method'] ?? 'cod'; // Default to Cash on Delivery
+
+        // Verify order exists
+        $order_check = "SELECT * FROM orders WHERE id = ? AND payment_status = 'pending'";
+        $stmt = $conn->prepare($order_check);
+        $stmt->bind_param("i", $order_id);
+        $stmt->execute();
+        $order = $stmt->get_result()->fetch_assoc();
+
+        if (!$order) {
+            return ['status' => 'error', 'message' => 'Invalid order or order already processed'];
+        }
+
+        $conn->begin_transaction();
+
+        if ($payment_method === 'cod') {
+            // Cash on Delivery
+            $update_order = "UPDATE orders SET status = 'confirmed', payment_status = 'pending', updated_at = NOW() WHERE id = ?";
+            $stmt = $conn->prepare($update_order);
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+
+            // Create payment record
+            $payment_query = "INSERT INTO payments (order_id, payment_method, amount, status, created_at) 
+                              VALUES (?, 'cod', ?, 'pending', NOW())";
+            $stmt = $conn->prepare($payment_query);
+            $stmt->bind_param("id", $order_id, $order['total_amount']);
+            $stmt->execute();
+
+            $message = 'Order confirmed! You can pay cash on delivery.';
+        } else {
+            // Online payment (simplified - you can integrate actual payment gateway later)
+            $transaction_id = $data['transaction_id'] ?? 'TXN_' . $order_id . '_' . time();
+
+            $update_order = "UPDATE orders SET status = 'paid', payment_status = 'paid', updated_at = NOW() WHERE id = ?";
+            $stmt = $conn->prepare($update_order);
+            $stmt->bind_param("i", $order_id);
+            $stmt->execute();
+
+            // Create payment record
+            $payment_query = "INSERT INTO payments (order_id, payment_method, amount, status, transaction_id, created_at) 
+                              VALUES (?, 'online', ?, 'success', ?, NOW())";
+            $stmt = $conn->prepare($payment_query);
+            $stmt->bind_param("ids", $order_id, $order['total_amount'], $transaction_id);
+            $stmt->execute();
+
+            $message = 'Payment successful! Your order has been confirmed.';
+        }
+
+        // Clear user's cart
+        $clear_cart = "DELETE FROM cart WHERE user_id = ?";
+        $stmt = $conn->prepare($clear_cart);
+        $stmt->bind_param("i", $order['user_id']);
+        $stmt->execute();
+
+        $conn->commit();
+
+        return [
+            'status' => 'success',
+            'message' => $message,
+            'order_id' => $order_id,
+            'redirect' => 'order-success.php?order=' . $order_id
+        ];
+    } catch (Exception $e) {
+        $conn->rollback();
+        return ['status' => 'error', 'message' => 'Payment processing failed: ' . $e->getMessage()];
+    }
+}
+    */
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,45 +622,50 @@
     <title>CycleCity | Secure Checkout - Your Hub for Quality Bicycles</title>
     <link rel="shortcut icon" href="./assets/images/favicon.png" type="image/x-icon">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script defer src="assets/js/main.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-    <!-- Enhanced CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
     <style>
-        /* Progress indicator styles */
         .checkout-progress {
-            position: relative;
-            margin-bottom: 2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            padding: 0 1rem;
         }
 
         .progress-bar {
             height: 4px;
             background: #e9ecef;
             border-radius: 2px;
-            overflow: hidden;
+            position: relative;
+            margin-bottom: 1rem;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #eb453b, #fd7069ff);
-            width: 0%;
+            background: #28a745;
+            border-radius: 2px;
             transition: width 0.3s ease;
+            width: 0%;
         }
 
         .progress-steps {
             display: flex;
             justify-content: space-between;
-            margin-top: 1rem;
+            position: relative;
         }
 
         .step {
             display: flex;
             flex-direction: column;
             align-items: center;
-            font-size: 0.875rem;
+            text-align: center;
+            flex: 1;
         }
 
         .step-circle {
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #e9ecef;
             color: #6c757d;
@@ -58,7 +678,7 @@
         }
 
         .step.active .step-circle {
-            background: #eb453b;
+            background: #28a745;
             color: white;
         }
 
@@ -67,11 +687,20 @@
             color: white;
         }
 
-        /* Form enhancements */
+        .step span {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .step.active span {
+            color: #28a745;
+            font-weight: 600;
+        }
+
         .form-section {
             background: white;
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 2rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border: 1px solid #e9ecef;
@@ -80,38 +709,60 @@
         .section-header {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
             margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid #f8f9fa;
         }
 
         .section-icon {
-            width: 24px;
-            height: 24px;
-            background: #eb453b;
-            border-radius: 6px;
+            width: 50px;
+            height: 50px;
+            background: #f8f9fa;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            margin-right: 1rem;
+            font-size: 1.5rem;
+            color: #28a745;
+        }
+
+        .addresses-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .address-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .address-card:hover {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .address-card.selected {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .address-content {
+            flex: 1;
+        }
+
+        .address-radio {
+            margin-left: 1rem;
         }
 
         .input-group-enhanced {
             position: relative;
-            margin-bottom: 1rem;
-        }
-
-        .floating-label {
-            position: absolute;
-            top: 50%;
-            left: 1rem;
-            transform: translateY(-50%);
-            color: #6c757d;
-            transition: all 0.3s ease;
-            pointer-events: none;
-            background: white;
-            padding: 0 0.25rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-control-enhanced {
@@ -119,117 +770,123 @@
             padding: 1rem;
             border: 2px solid #e9ecef;
             border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
             background: white;
+            transition: all 0.3s ease;
+            font-size: 1rem;
         }
 
         .form-control-enhanced:focus {
             outline: none;
-            border-color: #eb453b;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .floating-label {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: #6c757d;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            background: white;
+            padding: 0 0.5rem;
         }
 
         .form-control-enhanced:focus+.floating-label,
         .form-control-enhanced:not(:placeholder-shown)+.floating-label {
             top: -0.5rem;
-            left: 0.75rem;
             font-size: 0.875rem;
-            color: #eb453b;
-            font-weight: 500;
+            color: #28a745;
         }
 
-        .input-success {
-            border-color: #28a745 !important;
+        .payment-methods {
+            display: grid;
+            gap: 1rem;
         }
 
-        .input-error {
-            border-color: #dc3545 !important;
-        }
-
-        /* Address suggestions */
-        .address-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #e9ecef;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .suggestion-item {
-            padding: 0.75rem 1rem;
-            cursor: pointer;
-            border-bottom: 1px solid #f8f9fa;
-            transition: background-color 0.2s ease;
-        }
-
-        .suggestion-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .suggestion-item:last-child {
-            border-bottom: none;
-        }
-
-        /* Payment options */
         .payment-option {
             border: 2px solid #e9ecef;
             border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1rem;
+            padding: 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: white;
+            display: flex;
+            align-items: center;
         }
 
         .payment-option:hover {
-            border-color: #eb453b;
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .payment-option.active {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+
+        .payment-content {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            margin-left: 1rem;
+        }
+
+        .payment-icon {
+            width: 40px;
+            height: 40px;
             background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1.25rem;
+            color: #28a745;
         }
 
-        .payment-option.selected {
-            border-color: #eb453b;
-            background: #e3f2fd;
-        }
-
-        /* Order summary enhancements */
         .order-summary {
             background: white;
             border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
             position: sticky;
             top: 2rem;
+        }
+
+        .product-list {
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .product-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
             border-bottom: 1px solid #f8f9fa;
+        }
+
+        .product-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
         }
 
         .product-image {
             width: 80px;
             height: 80px;
             border-radius: 8px;
-            /* overflow: hidden; */
-            position: relative;
+            overflow: hidden;
+            margin-right: 1rem;
+            flex-shrink: 0;
         }
 
         .quantity-badge {
             position: absolute;
             top: -8px;
             right: -8px;
-            background: #eb453b;
+            background: #28a745;
             color: white;
             border-radius: 50%;
             width: 24px;
@@ -241,131 +898,68 @@
             font-weight: 600;
         }
 
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .coupon-section {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
 
-        .animate-in {
-            animation: slideIn 0.5s ease-out;
+        .order-totals {
+            padding-top: 1rem;
+            border-top: 2px solid #f8f9fa;
         }
 
-        /* Mobile responsiveness */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
         @media (max-width: 768px) {
             .form-section {
-                padding: 1rem;
-            }
-
-            .checkout-container {
-                flex-direction: column;
+                padding: 1.5rem;
             }
 
             .order-summary {
                 position: static;
                 margin-top: 2rem;
             }
-        }
 
-        /* Loading states */
-        .loading {
-            position: relative;
-            pointer-events: none;
-        }
-
-        .loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #eb453b;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+            .addresses-grid {
+                grid-template-columns: 1fr;
             }
-        }
 
-        /* Delivery time estimates */
-        .delivery-estimate {
-            background: #e8f5e8;
-            border: 1px solid #28a745;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
+            .address-card {
+                flex-direction: column;
+                text-align: left;
+            }
 
-        .estimate-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Security badges */
-        .security-badges {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-
-        .security-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: #28a745;
-        }
-    </style>
-
-    <script defer src="assets/js/main.js"></script>
-    <link href="assets/css/style.css" rel="stylesheet">
-    <style>
-        .btn-outline-primary {
-            --bs-btn-color: #eb453b;
-            --bs-btn-border-color: #eb453b;
-            --bs-btn-hover-color: #fff;
-            --bs-btn-hover-bg: #eb453b;
-            --bs-btn-hover-border-color: #eb453b;
-            --bs-btn-focus-shadow-rgb: 13, 110, 253;
-            --bs-btn-active-color: #fff;
-            --bs-btn-active-bg: #eb453b;
-            --bs-btn-active-border-color: #eb453b;
-            --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
-            --bs-btn-disabled-color: #eb453b;
-            --bs-btn-disabled-bg: transparent;
-            --bs-btn-disabled-border-color: #eb453b;
-            --bs-gradient: none;
+            .address-radio {
+                margin: 1rem 0 0 0;
+                align-self: flex-start;
+            }
         }
     </style>
 </head>
 
 <body>
-    <button class="back-to-top position-fixed end-0 bottom-0 d-center me-5">
-        <span class="text-h4">
-            <i class="ph ph-arrow-up"></i>
-        </span>
-    </button>
-
-    <!-- Enhanced Header -->
-    <header class="header-section position-fixed top-0 start-50 translate-middle-x border-bottom border-n100-1 bg-n0" data-lenis-prevent>
+    <header class="header-section position-fixed top-0 start-50 translate-middle-x border-bottom border-n100-1 bg-n0 d-none" data-lenis-prevent>
         <div class="container-fluid">
             <div class="row g-0 justify-content-center">
                 <div class="col-3xl-11 px-3xl-0 px-xxl-8 px-sm-6 px-0">
@@ -376,8 +970,6 @@
                                 <img class="w-100 d-none d-sm-block" src="./assets/images/logo.png" alt="logo">
                             </a>
                         </div>
-
-                        <!-- Enhanced navigation with checkout steps -->
                         <div class="d-flex align-items-center gap-4">
                             <span class="text-sm text-muted d-none d-md-block">Secure Checkout</span>
                             <div class="d-flex align-items-center gap-2">
@@ -402,7 +994,7 @@
                 <div class="progress-steps">
                     <div class="step active" data-step="1">
                         <div class="step-circle">1</div>
-                        <span>Delivery</span>
+                        <span>Delivery Details</span>
                     </div>
                     <div class="step" data-step="2">
                         <div class="step-circle">2</div>
@@ -410,11 +1002,7 @@
                     </div>
                     <div class="step" data-step="3">
                         <div class="step-circle">3</div>
-                        <span>Review</span>
-                    </div>
-                    <div class="step" data-step="4">
-                        <div class="step-circle">4</div>
-                        <span>Complete</span>
+                        <span>Confirmation</span>
                     </div>
                 </div>
             </div>
@@ -422,141 +1010,131 @@
             <div class="row g-4">
                 <!-- Left Column - Forms -->
                 <div class="col-lg-7">
-                    <!-- Delivery Information -->
-                    <div class="form-section animate-in" id="deliverySection">
+                    <!-- Address Section -->
+                    <div class="form-section animate-in" id="addressSection">
                         <div class="section-header">
                             <div class="section-icon">
-                                <i class="ph ph-truck"></i>
+                                <i class="ph ph-map-pin"></i>
                             </div>
                             <div>
-                                <h3 class="mb-1">Delivery Information</h3>
+                                <h3 class="mb-1">Delivery Address</h3>
                                 <p class="text-muted mb-0">Where should we deliver your order?</p>
                             </div>
                         </div>
 
-                        <!-- Quick Address Selection -->
-                        <div id="savedAddressesSection" class="mb-4" style="display: none;">
-                            <h6 class="mb-3">Use Saved Address</h6>
-                            <div id="savedAddressesList"></div>
+                        <?php if (!empty($saved_addresses)): ?>
+                            <div class="saved-addresses-section mb-4">
+                                <h5 class="mb-3">Choose a delivery address</h5>
+                                <div class="addresses-grid">
+                                    <?php foreach ($saved_addresses as $address): ?>
+                                        <div class="address-card <?= $address['is_default'] ? 'selected' : '' ?>" data-address-id="<?= $address['id'] ?>">
+                                            <div class="address-content">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="mb-0"><?= htmlspecialchars($address['full_name']) ?></h6>
+                                                    <?php if ($address['is_default']): ?>
+                                                        <span class="badge bg-primary">Default</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <p class="text-muted mb-1"><?= htmlspecialchars($address['address_line1']) ?></p>
+                                                <?php if ($address['address_line2']): ?>
+                                                    <p class="text-muted mb-1"><?= htmlspecialchars($address['address_line2']) ?></p>
+                                                <?php endif; ?>
+                                                <p class="text-muted mb-1">
+                                                    <?= htmlspecialchars($address['city']) ?>,
+                                                    <?= htmlspecialchars($address['state']) ?> -
+                                                    <?= htmlspecialchars($address['postal_code']) ?>
+                                                </p>
+                                                <p class="text-muted mb-0">Phone: <?= htmlspecialchars($address['phone']) ?></p>
+                                            </div>
+                                            <div class="address-radio">
+                                                <input type="radio" name="selected_address" value="<?= $address['id'] ?>"
+                                                    <?= $address['is_default'] ? 'checked' : '' ?> class="form-check-input">
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <button type="button" class="btn btn-outline-primary" id="addNewAddressBtn">
+                                        <i class="ph ph-plus me-2"></i>Add New Address
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- New Address Form -->
+                        <div class="new-address-form" id="newAddressForm" <?= !empty($saved_addresses) ? 'style="display: none;"' : '' ?>>
+                            <h5 class="mb-3"><?= !empty($saved_addresses) ? 'Add New Address' : 'Enter Delivery Address' ?></h5>
+                            <form id="addressForm">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group-enhanced">
+                                            <input type="text" id="fullName" class="form-control-enhanced" placeholder=" " required>
+                                            <label class="floating-label">Full Name *</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="input-group-enhanced">
+                                            <div class="d-flex">
+                                                <span class="form-control-enhanced" style="max-width: 80px; text-align: center; background: #f8f9fa;">+91</span>
+                                                <input type="tel" id="phone" class="form-control-enhanced" placeholder="Phone Number *" maxlength="10" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="input-group-enhanced">
+                                    <input type="text" id="addressLine1" class="form-control-enhanced" placeholder=" " required>
+                                    <label class="floating-label">Address Line 1 *</label>
+                                </div>
+
+                                <div class="input-group-enhanced">
+                                    <input type="text" id="addressLine2" class="form-control-enhanced" placeholder=" ">
+                                    <label class="floating-label">Address Line 2 (Optional)</label>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="input-group-enhanced">
+                                            <input type="text" id="city" class="form-control-enhanced" placeholder=" " required>
+                                            <label class="floating-label">City *</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="input-group-enhanced">
+                                            <input type="text" id="state" class="form-control-enhanced" placeholder=" " required>
+                                            <label class="floating-label">State *</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="input-group-enhanced">
+                                            <input type="text" id="postalCode" class="form-control-enhanced" placeholder=" " maxlength="6" required>
+                                            <label class="floating-label">PIN Code *</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" id="saveAddress" checked>
+                                    <label class="form-check-label" for="saveAddress">
+                                        Save this address for future orders
+                                    </label>
+                                </div>
+
+                                <?php if (!empty($saved_addresses)): ?>
+                                    <div class="d-flex gap-2 mt-3">
+                                        <button type="button" class="btn btn-success" id="saveAddressBtn">
+                                            <i class="ph ph-check me-2"></i>Save Address
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="cancelAddressBtn">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            </form>
                         </div>
-
-                        <!-- Enhanced Address Form -->
-                        <form id="deliveryForm">
-                            <!-- Pincode with enhanced UX -->
-                            <div class="input-group-enhanced">
-                                <input type="text" id="pincode" class="form-control-enhanced" placeholder=" " maxlength="6" pattern="[0-9]{6}" required>
-                                <label class="floating-label">PIN Code *</label>
-                                <div id="pincodeLoader" class="position-absolute end-0 top-50 translate-middle-y me-3 d-none">
-                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                                </div>
-                                <div id="pincodeStatus" class="position-absolute end-0 top-50 translate-middle-y me-3 d-none">
-                                    <i class="ph ph-check-circle text-success"></i>
-                                </div>
-                                <div id="addressSuggestions" class="address-suggestions d-none"></div>
-                            </div>
-
-                            <!-- Name fields -->
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" id="firstName" class="form-control-enhanced" placeholder=" " required>
-                                        <label class="floating-label">First Name *</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" id="lastName" class="form-control-enhanced" placeholder=" " required>
-                                        <label class="floating-label">Last Name *</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Address fields -->
-                            <div class="input-group-enhanced">
-                                <input type="text" id="address" class="form-control-enhanced" placeholder=" " required>
-                                <label class="floating-label">Street Address *</label>
-                            </div>
-                            <!-- Location fields -->
-                            <div class="row g-3">
-                                <!-- <div class="col-md-4">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" id="city" class="form-control-enhanced" placeholder=" " readonly>
-                                        <label class="floating-label">City</label>
-                                    </div>
-                                </div> -->
-                                <div class="col-md-4">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" id="landmark" class="form-control-enhanced" placeholder=" ">
-                                        <label class="floating-label">Landmark (Optional)</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" id="state" class="form-control-enhanced" placeholder=" " readonly>
-                                        <label class="floating-label">State</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="input-group-enhanced">
-                                        <select id="area" class="form-control-enhanced">
-                                            <option value="">Select Area</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Contact information -->
-                            <div class="input-group-enhanced">
-                                <div class="d-flex">
-                                    <span class="form-control-enhanced" style="max-width: 80px; text-align: center; background: #f8f9fa;">+91</span>
-                                    <input type="tel" id="phone" class="form-control-enhanced" placeholder="Phone Number *" maxlength="10">
-                                </div>
-                                <!-- <label class="floating-label">Phone Number *</label> -->
-                            </div>
-
-                            <!-- Delivery preferences -->
-                            <div class="row g-3 mt-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Preferred Delivery Time</label>
-                                    <select class="form-control-enhanced" id="deliveryTime">
-                                        <option value="">Any time</option>
-                                        <option value="morning">Morning (9 AM - 12 PM)</option>
-                                        <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
-                                        <option value="evening">Evening (6 PM - 9 PM)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Delivery Instructions</label>
-                                    <input type="text" class="form-control-enhanced" placeholder="Special instructions">
-                                </div>
-                            </div>
-
-                            <!-- Save address option -->
-                            <div class="form-check mt-3">
-                                <input class="form-check-input" type="checkbox" id="saveAddress">
-                                <label class="form-check-label" for="saveAddress">
-                                    Save this address for future orders
-                                </label>
-                            </div>
-
-                            <!-- Delivery estimate -->
-                            <div id="deliveryEstimate" class="delivery-estimate d-none">
-                                <h6 class="text-success mb-2">
-                                    <i class="ph ph-check-circle me-2"></i>Delivery Available
-                                </h6>
-                                <div class="estimate-item">
-                                    <span>Standard Delivery:</span>
-                                    <strong>3-5 business days</strong>
-                                </div>
-                                <div class="estimate-item">
-                                    <span>Express Delivery:</span>
-                                    <strong>1-2 business days (+₹50)</strong>
-                                </div>
-                            </div>
-                        </form>
                     </div>
 
-                    <!-- Payment Information -->
+                    <!-- Payment Section -->
                     <div class="form-section animate-in" id="paymentSection" style="display: none;">
                         <div class="section-header">
                             <div class="section-icon">
@@ -568,145 +1146,36 @@
                             </div>
                         </div>
 
-                        <!-- Enhanced payment options -->
-                        <div class="payment-options">
-                            <div class="payment-option" data-payment="cod">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment" value="cod">
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">Cash on Delivery</h6>
-                                            <small class="text-muted">Pay when you receive your order</small>
-                                        </div>
-                                    </div>
-                                    <i class="ph ph-money fs-4 text-success"></i>
+                        <div class="payment-methods">
+                            <!-- <div class="payment-option active" data-method="cod">
+                                <div class="payment-radio">
+                                    <input type="radio" name="payment_method" value="cod" checked class="form-check-input">
                                 </div>
-                                <div class="payment-details mt-3 d-none">
-                                    <div class="alert alert-info">
-                                        <i class="ph ph-info me-2"></i>
-                                        Additional ₹30 COD charges apply. Available for orders up to ₹50,000.
+                                 <div class="payment-content">
+                                    <div class="payment-icon">
+                                        <i class="ph ph-money"></i>
                                     </div>
-                                </div>
-                            </div>
+                                    <div>
+                                        <h6 class="mb-1">Cash on Delivery</h6>
+                                        <p class="text-muted mb-0">Pay when your order arrives</p>
+                                    </div>
+                                </div> 
+                            </div> -->
 
-                            <div class="payment-option" data-payment="upi">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment" value="upi">
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">UPI Payment</h6>
-                                            <small class="text-muted">Pay using UPI apps like GPay, PhonePe, Paytm</small>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <img src="./assets/images/gpay.png" alt="GPay" height="24">
-                                        <img src="./assets/images/phonepe.png" alt="PhonePe" height="24">
-                                    </div>
+                            <div class="payment-option" data-method="online">
+                                <div class="payment-radio">
+                                    <input type="radio" name="payment_method" value="online" class="form-check-input">
                                 </div>
-                                <div class="payment-details mt-3 d-none">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" class="form-control-enhanced" placeholder="Enter UPI ID">
-                                        <label class="floating-label">UPI ID</label>
+                                <div class="payment-content">
+                                    <div class="payment-icon">
+                                        <i class="ph ph-credit-card"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Online Payment</h6>
+                                        <p class="text-muted mb-0">Pay securely with card/UPI/net banking</p>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="payment-option" data-payment="card">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment" value="card">
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">Credit/Debit Card</h6>
-                                            <small class="text-muted">Visa, Mastercard, Rupay accepted</small>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <img src="./assets/images/visa.png" alt="Visa" height="24">
-                                        <img src="./assets/images/mastercard.png" alt="Mastercard" height="24">
-                                    </div>
-                                </div>
-                                <div class="payment-details mt-3 d-none">
-                                    <div class="input-group-enhanced">
-                                        <input type="text" class="form-control-enhanced" placeholder="1234 5678 9012 3456">
-                                        <label class="floating-label">Card Number</label>
-                                    </div>
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="input-group-enhanced">
-                                                <input type="text" class="form-control-enhanced" placeholder="MM/YY">
-                                                <label class="floating-label">Expiry Date</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="input-group-enhanced">
-                                                <input type="text" class="form-control-enhanced" placeholder="123">
-                                                <label class="floating-label">CVV</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="input-group-enhanced">
-                                        <input type="text" class="form-control-enhanced" placeholder="John Doe">
-                                        <label class="floating-label">Cardholder Name</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="payment-option" data-payment="wallet">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="payment" value="wallet">
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">Digital Wallets</h6>
-                                            <small class="text-muted">Paytm, Amazon Pay, MobiKwik</small>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <img src="./assets/images/paytm.png" alt="Paytm" height="24">
-                                        <img src="./assets/images/amazonpay.png" alt="Amazon Pay" height="24">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Security badges -->
-                        <div class="security-badges">
-                            <div class="security-badge">
-                                <i class="ph ph-shield-check"></i>
-                                <span>256-bit SSL</span>
-                            </div>
-                            <div class="security-badge">
-                                <i class="ph ph-lock"></i>
-                                <span>Secure Payment</span>
-                            </div>
-                            <div class="security-badge">
-                                <i class="ph ph-credit-card"></i>
-                                <span>PCI Compliant</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Order Review -->
-                    <div class="form-section animate-in" id="reviewSection" style="display: none;">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <i class="ph ph-eye"></i>
-                            </div>
-                            <div>
-                                <h3 class="mb-1">Review Your Order</h3>
-                                <p class="text-muted mb-0">Please review your order before completing</p>
-                            </div>
-                        </div>
-
-                        <div id="orderReview">
-                            <!-- Order review content will be populated by JavaScript -->
                         </div>
                     </div>
 
@@ -715,12 +1184,8 @@
                         <button type="button" id="prevBtn" class="btn btn-outline-secondary" style="display: none;">
                             <i class="ph ph-arrow-left me-2"></i>Previous
                         </button>
-
                         <button type="button" id="nextBtn" class="btn btn-secondary ms-auto">
-                            Next <span class="icon">
-                                <i class="ph ph-arrow-up-right"></i>
-                                <i class="ph ph-arrow-up-right"></i>
-                            </span>
+                            Next <span class="icon"><i class="ph ph-arrow-up-right"></i></span>
                         </button>
                         <button type="button" id="placeOrderBtn" class="btn btn-success ms-auto" style="display: none;">
                             <i class="ph ph-check me-2"></i>Place Order
@@ -735,36 +1200,34 @@
 
                         <!-- Product list -->
                         <div class="product-list mb-4">
-                            <div class="product-item">
-                                <div class="product-image position-relative">
-                                    <img src="assets/images/product-1.png" alt="Giant Defy Advanced" class="w-100 h-100 object-fit-cover">
-                                    <div class="quantity-badge">1</div>
+                            <?php while ($item = mysqli_fetch_assoc($carts)): ?>
+                                <?php
+                                $images = json_decode($item['product_images'], true);
+                                $firstImage = $images[0] ?? 'default.jpg';
+                                $item_price = $item['variant_id'] ?
+                                    ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
+                                ?>
+                                <div class="product-item">
+                                    <div class="product-image position-relative">
+                                        <img src="./assets/uploads/product/<?php echo $firstImage ?>" alt="<?php echo htmlspecialchars($item['product_name']) ?>" class="w-100 h-80">
+                                        <div class="quantity-badge"><?= htmlspecialchars($item['qty']) ?></div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1"><?= htmlspecialchars($item['product_name']) ?></h6>
+                                        <?php if ($item['variant_name']): ?>
+                                            <p class="text-muted mb-1">Variant: <?= htmlspecialchars($item['variant_name']) ?></p>
+                                        <?php endif; ?>
+                                        <p class="text-primary mb-0"><b>₹<?= number_format($item_price) ?></b></p>
+                                    </div>
                                 </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">Giant Defy Advanced</h6>
-                                    <p class="text-muted mb-1">Green / S2</p>
-                                    <p class="text-primary mb-0">₹29,900</p>
-                                </div>
-                            </div>
-
-                            <div class="product-item">
-                                <div class="product-image position-relative">
-                                    <img src="assets/images/product-2.png" alt="Cannondale Topstone" class="w-100 h-100 object-fit-cover">
-                                    <div class="quantity-badge">1</div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">Cannondale Topstone</h6>
-                                    <p class="text-muted mb-1">Orange / S2</p>
-                                    <p class="text-primary mb-0">₹25,000</p>
-                                </div>
-                            </div>
+                            <?php endwhile; ?>
                         </div>
 
                         <!-- Coupon section -->
                         <div class="coupon-section mb-4">
                             <div class="d-flex">
                                 <input type="text" class="form-control me-2" placeholder="Enter coupon code" id="couponCode">
-                                <button class="btn btn-outline-primary" id="applyCoupon">Apply</button>
+                                <button class="btn btn-outline-dark" id="applyCoupon">Apply</button>
                             </div>
                             <div id="couponMessage" class="mt-2"></div>
                         </div>
@@ -773,7 +1236,7 @@
                         <div class="order-totals">
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal:</span>
-                                <span>₹54,900</span>
+                                <span><b>₹<span id="subtotalAmount"><?= number_format($subtotal) ?></span></b></span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Shipping:</span>
@@ -785,34 +1248,12 @@
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Tax (GST 18%):</span>
-                                <span id="taxAmount">₹9,882</span>
+                                <span id="taxAmount">₹<?= number_format($tax_amount) ?></span>
                             </div>
                             <hr>
                             <div class="d-flex justify-content-between">
                                 <strong>Total:</strong>
-                                <strong id="finalTotal">₹64,782</strong>
-                            </div>
-                        </div>
-
-                        <!-- Estimated delivery -->
-                        <div class="estimated-delivery mt-4 p-3 bg-light rounded">
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="ph ph-truck text-success"></i>
-                                <strong>Estimated Delivery</strong>
-                            </div>
-                            <p class="mb-0 text-muted">Your order will be delivered between <strong>Jan 31 - Feb 3, 2025</strong></p>
-                        </div>
-
-                        <!-- Customer support -->
-                        <div class="customer-support mt-4 text-center">
-                            <p class="mb-2">Need help with your order?</p>
-                            <div class="d-flex justify-content-center gap-3">
-                                <a href="tel:+918000123456" class="btn btn-sm btn-outline-primary">
-                                    <i class="ph ph-phone me-1"></i>Call
-                                </a>
-                                <a href="#" class="btn btn-sm btn-outline-primary">
-                                    <i class="ph ph-chat-circle me-1"></i>Chat
-                                </a>
+                                <strong id="finalTotal" data-subtotal="<?= $subtotal ?>">₹<?= number_format($total_amount) ?></strong>
                             </div>
                         </div>
                     </div>
@@ -821,593 +1262,375 @@
         </div>
     </main>
 
-    <!-- Enhanced jQuery Checkout -->
     <script>
-        class EnhancedCheckout {
-            constructor() {
-                this.currentStep = 1;
-                this.totalSteps = 4;
-                this.formData = {};
-                this.init();
-            }
+        $(document).ready(function() {
+            let currentStep = 1;
+            let orderId = null;
+            let appliedCoupon = null;
 
-            init() {
-                this.bindEvents();
-                this.loadSavedAddresses();
-                this.updateProgress();
-                this.initializeFormValidation();
-            }
-
-            bindEvents() {
-                // Navigation buttons
-                $('#nextBtn').on('click', () => this.nextStep());
-                $('#prevBtn').on('click', () => this.prevStep());
-                $('#placeOrderBtn').on('click', () => this.placeOrder());
-
-                // Form inputs
-                $('#pincode').on('input', (e) => this.handlePincodeInput(e));
-                $('#phone').on('input', (e) => this.validatePhone(e));
-
-                // Payment options
-                $('.payment-option').on('click', (e) => this.selectPaymentOption(e));
-
-                // Coupon code
-                $('#applyCoupon').on('click', () => this.applyCoupon());
-
-                // Real-time validation
-                this.setupRealTimeValidation();
-
-                // Auto-save form data
-                this.setupAutoSave();
-            }
-
-            handlePincodeInput(e) {
-                const pincode = e.target.value.replace(/\D/g, '');
-                $(e.target).val(pincode);
-
-                if (pincode.length === 6) {
-                    this.fetchLocationData(pincode);
-                } else {
-                    this.resetLocationFields();
-                }
-            }
-
-            async fetchLocationData(pincode) {
-                const $loader = $('#pincodeLoader');
-                const $status = $('#pincodeStatus');
-
-                $loader.removeClass('d-none');
-                $status.addClass('d-none');
-
-                try {
-                    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-                    const data = await response.json();
-
-                    if (data[0].Status === "Success" && data[0].PostOffice.length > 0) {
-                        this.populateLocationData(data[0].PostOffice);
-                        this.showDeliveryEstimate();
-                        $status.html('<i class="ph ph-check-circle text-success"></i>');
-                        $status.removeClass('d-none');
-
-                        // Mark pincode field as valid
-                        $('#pincode').addClass('input-success');
-                    } else {
-                        this.showError('Invalid PIN code');
-                        $('#pincode').addClass('input-error');
-                    }
-                } catch (error) {
-                    this.showError('Unable to fetch location data');
-                } finally {
-                    $loader.addClass('d-none');
-                }
-            }
-
-            populateLocationData(postOffices) {
-                const primaryOffice = postOffices[0];
-
-                $('#city').val(primaryOffice.District);
-                $('#state').val(primaryOffice.State);
-
-                const $areaSelect = $('#area');
-                $areaSelect.html('<option value="">Select Area</option>');
-
-                postOffices.forEach(office => {
-                    $areaSelect.append($('<option>', {
-                        value: office.Name,
-                        text: office.Name
-                    }));
-                });
-
-                // Enable form fields
-                this.enableAddressForm();
-            }
-
-            showDeliveryEstimate() {
-                const $estimateDiv = $('#deliveryEstimate');
-                $estimateDiv.removeClass('d-none');
-                $estimateDiv.addClass('animate-in');
-            }
-
-            enableAddressForm() {
-                const $form = $('#deliveryForm');
-                const $inputs = $form.find('input:not(#pincode), select');
-
-                $inputs.each(function() {
-                    $(this).prop('disabled', false);
-                    $(this).css('opacity', '1');
-                });
-
-                // Focus on first name
-                setTimeout(() => {
-                    $('#firstName').focus();
-                }, 300);
-            }
-
-            resetLocationFields() {
-                ['city', 'state', 'area'].forEach(id => {
-                    const $field = $('#' + id);
-                    if ($field.is('select')) {
-                        $field.html('<option value="">Select Area</option>');
-                    } else {
-                        $field.val('');
-                    }
-                });
-
-                $('#deliveryEstimate').addClass('d-none');
-            }
-
-            validatePhone(e) {
-                const phone = e.target.value;
-                $(e.target).val(phone);
-
-                const isValid = phone.length === 10;
-                $(e.target).toggleClass('input-success', isValid);
-                $(e.target).toggleClass('input-error', phone.length > 0 && !isValid);
-            }
-
-            selectPaymentOption(e) {
-                // Remove selection from all options
-                $('.payment-option').removeClass('selected');
-                $('.payment-details').addClass('d-none');
-
-                // Select clicked option
-                const $option = $(e.currentTarget);
-                $option.addClass('selected');
-
-                const $radio = $option.find('input[type="radio"]');
-                $radio.prop('checked', true);
-
-                // Show payment details if any
-                const $details = $option.find('.payment-details');
-                if ($details.length) {
-                    $details.removeClass('d-none');
+            // Update progress
+            function updateProgress() {
+                $('.step').removeClass('active completed');
+                $('.step[data-step="' + currentStep + '"]').addClass('active');
+                for (let i = 1; i < currentStep; i++) {
+                    $('.step[data-step="' + i + '"]').addClass('completed');
                 }
 
-                this.updateOrderTotal();
+                const progressPercent = ((currentStep - 1) / 2) * 100;
+                $('#progressFill').css('width', progressPercent + '%');
             }
 
-            applyCoupon() {
+            // Navigation
+            function showStep(step) {
+                $('.form-section').hide();
+
+                if (step === 1) {
+                    $('#addressSection').show();
+                    $('#prevBtn').hide();
+                    $('#nextBtn').show().text('Next');
+                    $('#placeOrderBtn').hide();
+                } else if (step === 2) {
+                    $('#paymentSection').show();
+                    $('#prevBtn').show();
+                    $('#nextBtn').hide();
+                    $('#placeOrderBtn').show();
+                }
+
+                currentStep = step;
+                updateProgress();
+            }
+
+            // Address card selection
+            $(document).on('click', '.address-card', function() {
+                $('.address-card').removeClass('selected');
+                $(this).addClass('selected');
+                $(this).find('input[type="radio"]').prop('checked', true);
+            });
+
+            // Add new address button
+            $('#addNewAddressBtn').click(function() {
+                $('#newAddressForm').slideDown();
+                $(this).hide();
+            });
+
+            // Cancel add address
+            $('#cancelAddressBtn').click(function() {
+                $('#newAddressForm').slideUp();
+                $('#addNewAddressBtn').show();
+                $('#addressForm')[0].reset();
+            });
+
+            // Save new address
+            $('#saveAddressBtn').click(function() {
+                const formData = {
+                    action: 'save_address',
+                    full_name: $('#fullName').val(),
+                    phone: $('#phone').val(),
+                    address_line1: $('#addressLine1').val(),
+                    address_line2: $('#addressLine2').val(),
+                    city: $('#city').val(),
+                    state: $('#state').val(),
+                    postal_code: $('#postalCode').val(),
+                    country: 'India',
+                    is_default: $('#saveAddress').is(':checked') ? 1 : 0
+                };
+
+                $.post(window.location.href, formData)
+                    .done(function(response) {
+                        if (response.status === 'success') {
+                            alert('Address saved successfully!');
+                            location.reload();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    })
+                    .fail(function() {
+                        alert('Error saving address. Please try again.');
+                    });
+            });
+
+            // Payment method selection
+            $(document).on('click', '.payment-option', function() {
+                $('.payment-option').removeClass('active');
+                $(this).addClass('active');
+                $(this).find('input[type="radio"]').prop('checked', true);
+            });
+
+            // Apply coupon
+            $('#applyCoupon').click(function() {
                 const couponCode = $('#couponCode').val().trim();
-                const $messageDiv = $('#couponMessage');
-
                 if (!couponCode) {
-                    this.showCouponMessage('Please enter a coupon code', 'error');
+                    alert('Please enter a coupon code');
                     return;
                 }
 
-                // Simulate coupon validation
-                const validCoupons = {
-                    'SAVE10': {
-                        discount: 10,
-                        type: 'percentage'
-                    },
-                    'FLAT500': {
-                        discount: 500,
-                        type: 'fixed'
-                    },
-                    'WELCOME': {
-                        discount: 15,
-                        type: 'percentage'
-                    }
-                };
+                const button = $(this);
+                button.prop('disabled', true).text('Applying...');
 
-                if (validCoupons[couponCode.toUpperCase()]) {
-                    const coupon = validCoupons[couponCode.toUpperCase()];
-                    this.applyCouponDiscount(coupon);
-                    this.showCouponMessage(`Coupon applied! You saved ₹${this.calculateDiscount(coupon)}`, 'success');
+                $.post(window.location.href, {
+                        action: 'apply_coupon',
+                        coupon_code: couponCode
+                    })
+                    .done(function(response) {
+                        if (response.status === 'success') {
+                            appliedCoupon = {
+                                code: couponCode,
+                                discount: response.discount
+                            };
+
+                            updateOrderTotals();
+                            $('#couponMessage').html('<div class="text-success small">Coupon applied! You saved ₹' + response.discount + '</div>');
+                            $('#applyCoupon').text('Applied').removeClass('btn-outline-dark').addClass('btn-success');
+                        } else {
+                            $('#couponMessage').html('<div class="text-danger small">' + response.message + '</div>');
+                            button.prop('disabled', false).text('Apply');
+                        }
+                    })
+                    .fail(function() {
+                        alert('Error applying coupon. Please try again.');
+                        button.prop('disabled', false).text('Apply');
+                    });
+            });
+
+            // Update order totals
+            function updateOrderTotals() {
+                const subtotal = parseFloat($('#finalTotal').data('subtotal'));
+                const discount = appliedCoupon ? appliedCoupon.discount : 0;
+                const taxableAmount = subtotal - discount;
+                const tax = taxableAmount * 0.18;
+                const total = subtotal - discount + tax;
+
+                if (discount > 0) {
+                    $('#discountRow').show();
+                    $('#discountAmount').text('-₹' + discount.toFixed(0));
                 } else {
-                    this.showCouponMessage('Invalid coupon code', 'error');
-                }
-            }
-
-            applyCouponDiscount(coupon) {
-                const $discountRow = $('#discountRow');
-                const $discountAmount = $('#discountAmount');
-
-                const discount = this.calculateDiscount(coupon);
-                $discountAmount.text(`-₹${discount}`);
-                $discountRow.show();
-
-                this.updateOrderTotal();
-            }
-
-            calculateDiscount(coupon) {
-                const subtotal = 54900;
-                if (coupon.type === 'percentage') {
-                    return Math.floor((subtotal * coupon.discount) / 100);
-                } else {
-                    return coupon.discount;
-                }
-            }
-
-            showCouponMessage(message, type) {
-                const $messageDiv = $('#couponMessage');
-                $messageDiv.text(message);
-                $messageDiv.attr('class', `mt-2 text-${type === 'success' ? 'success' : 'danger'}`);
-
-                setTimeout(() => {
-                    $messageDiv.text('');
-                    $messageDiv.attr('class', 'mt-2');
-                }, 3000);
-            }
-
-            updateOrderTotal() {
-                // Calculate total with discounts and payment charges
-                let subtotal = 54900;
-                let discount = 0;
-                let tax = Math.floor(subtotal * 0.18);
-                let paymentCharges = 0;
-
-                // Add COD charges if selected
-                const selectedPayment = $('input[name="payment"]:checked').val();
-                if (selectedPayment === 'cod') {
-                    paymentCharges = 30;
+                    $('#discountRow').hide();
                 }
 
-                // Apply discount if any
-                const $discountElement = $('#discountAmount');
-                if ($discountElement.length && $discountElement.text() !== '-₹0') {
-                    discount = parseInt($discountElement.text().replace('-₹', ''));
-                }
-
-                const total = subtotal - discount + tax + paymentCharges;
-                $('#finalTotal').text(`₹${total.toLocaleString()}`);
+                $('#taxAmount').text('₹' + tax.toFixed(0));
+                $('#finalTotal').text('₹' + total.toFixed(0));
             }
 
-            nextStep() {
-                if (this.validateCurrentStep()) {
-                    this.currentStep++;
-                    this.updateStepVisibility();
-                    this.updateProgress();
-                    this.saveFormData();
-                }
-            }
+            // Next button
+            $('#nextBtn').click(function() {
+                if (currentStep === 1) {
+                    // Validate address selection
+                    const selectedAddress = $('input[name="selected_address"]:checked').val();
+                    const hasNewAddress = $('#fullName').val() && $('#phone').val() && $('#addressLine1').val() &&
+                        $('#city').val() && $('#state').val() && $('#postalCode').val();
 
-            prevStep() {
-                this.currentStep--;
-                this.updateStepVisibility();
-                this.updateProgress();
-            }
-
-            validateCurrentStep() {
-                switch (this.currentStep) {
-                    case 1:
-                        return this.validateDeliveryForm();
-                    case 2:
-                        return this.validatePaymentForm();
-                    case 3:
-                        return this.validateReviewForm();
-                    default:
-                        return true;
-                }
-            }
-
-            validateDeliveryForm() {
-                const requiredFields = ['pincode', 'firstName', 'lastName', 'address', 'phone'];
-                let isValid = true;
-
-                requiredFields.forEach(fieldId => {
-                    const $field = $('#' + fieldId);
-                    if (!$field.val().trim()) {
-                        $field.addClass('input-error');
-                        isValid = false;
-                    } else {
-                        $field.removeClass('input-error');
-                        $field.addClass('input-success');
+                    if (!selectedAddress && !hasNewAddress) {
+                        alert('Please select an address or fill in the address form');
+                        return;
                     }
-                });
 
-                // Additional phone validation
-                const phone = $('#phone').val();
-                if (phone.length !== 10) {
-                    $('#phone').addClass('input-error');
-                    isValid = false;
+                    showStep(2);
                 }
+            });
 
-                if (!isValid) {
-                    this.showError('Please fill all required fields correctly');
+            // Previous button
+            $('#prevBtn').click(function() {
+                if (currentStep === 2) {
+                    showStep(1);
                 }
+            });
+            // inside your $(document).ready(...)
+            $('#placeOrderBtn').click(function() {
+                const button = $(this);
+                button.prop('disabled', true).html('<i class="ph ph-spinner me-2"></i>Processing...');
 
-                return isValid;
-            }
+                const paymentMethod = $('input[name="payment_method"]:checked').val() || 'cod';
 
-            validatePaymentForm() {
-                const selectedPayment = $('input[name="payment"]:checked');
-                if (selectedPayment.length === 0) {
-                    this.showError('Please select a payment method');
-                    return false;
-                }
-                return true;
-            }
-
-            validateReviewForm() {
-                return true; // Review step doesn't need validation
-            }
-
-            updateStepVisibility() {
-                // Hide all sections
-                $('#deliverySection, #paymentSection, #reviewSection').hide();
-
-                // Show current section
-                switch (this.currentStep) {
-                    case 1:
-                        $('#deliverySection').show();
-                        break;
-                    case 2:
-                        $('#paymentSection').show();
-                        break;
-                    case 3:
-                        $('#reviewSection').show();
-                        this.populateReview();
-                        break;
-                }
-
-                // Update button visibility
-                $('#prevBtn').toggle(this.currentStep > 1);
-                $('#nextBtn').toggle(this.currentStep < 3);
-                $('#placeOrderBtn').toggle(this.currentStep === 3);
-            }
-
-            updateProgress() {
-                const progress = (this.currentStep / this.totalSteps) * 100;
-                $('#progressFill').css('width', `${progress}%`);
-
-                // Update step indicators
-                $('.step').each((index, element) => {
-                    const stepNumber = index + 1;
-                    const $step = $(element);
-                    $step.removeClass('active completed');
-
-                    if (stepNumber < this.currentStep) {
-                        $step.addClass('completed');
-                        $step.find('.step-circle').html('✓');
-                    } else if (stepNumber === this.currentStep) {
-                        $step.addClass('active');
-                        $step.find('.step-circle').html(stepNumber);
-                    } else {
-                        $step.find('.step-circle').html(stepNumber);
-                    }
-                });
-            }
-
-            populateReview() {
-                const $reviewDiv = $('#orderReview');
-                const deliveryData = this.getDeliveryData();
-                const paymentData = this.getPaymentData();
-
-                $reviewDiv.html(`
-                <div class="review-section mb-4">
-                    <h6>Delivery Address</h6>
-                    <div class="bg-light p-3 rounded">
-                        <p class="mb-1"><strong>${deliveryData.firstName} ${deliveryData.lastName}</strong></p>
-                        <p class="mb-1">${deliveryData.address}</p>
-                        <p class="mb-1">${deliveryData.city}, ${deliveryData.state} - ${deliveryData.pincode}</p>
-                        <p class="mb-0">Phone: +91 ${deliveryData.phone}</p>
-                    </div>
-                </div>
-                
-                <div class="review-section mb-4">
-                    <h6>Payment Method</h6>
-                    <div class="bg-light p-3 rounded">
-                        <p class="mb-0">${paymentData.method}</p>
-                    </div>
-                </div>
-                
-                <div class="review-section">
-                    <h6>Order Items</h6>
-                    <div class="bg-light p-3 rounded">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Giant Defy Advanced (Green / S2)</span>
-                            <span>₹29,900</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Cannondale Topstone (Orange / S2)</span>
-                            <span>₹25,000</span>
-                        </div>
-                    </div>
-                </div>
-            `);
-            }
-
-            getDeliveryData() {
-                return {
-                    firstName: $('#firstName').val(),
-                    lastName: $('#lastName').val(),
-                    address: $('#address').val(),
+                const formData = {
+                    action: 'create_order',
+                    payment_method: paymentMethod,
+                    selected_address: $('input[name="selected_address"]:checked').val(),
+                    full_name: $('#fullName').val(),
+                    phone: $('#phone').val(),
+                    address_line1: $('#addressLine1').val(),
+                    address_line2: $('#addressLine2').val(),
                     city: $('#city').val(),
                     state: $('#state').val(),
-                    pincode: $('#pincode').val(),
-                    phone: $('#phone').val()
-                };
-            }
-
-            getPaymentData() {
-                const selectedPayment = $('input[name="payment"]:checked').val();
-                const paymentMethods = {
-                    'cod': 'Cash on Delivery',
-                    'upi': 'UPI Payment',
-                    'card': 'Credit/Debit Card',
-                    'wallet': 'Digital Wallet'
+                    postal_code: $('#postalCode').val(),
+                    country: 'India'
                 };
 
-                return {
-                    method: paymentMethods[selectedPayment] || 'Not selected'
-                };
-            }
-
-            saveFormData() {
-                // Auto-save form data to localStorage
-                this.formData = {
-                    delivery: this.getDeliveryData(),
-                    payment: this.getPaymentData(),
-                    step: this.currentStep
-                };
-
-                localStorage.setItem('checkoutData', JSON.stringify(this.formData));
-            }
-
-            loadSavedAddresses() {
-                const savedAddresses = JSON.parse(localStorage.getItem('savedAddresses') || '[]');
-
-                if (savedAddresses.length > 0) {
-                    const $section = $('#savedAddressesSection');
-                    const $list = $('#savedAddressesList');
-
-                    const addressHtml = savedAddresses.map((addr, index) => `
-                    <div class="saved-address-item border rounded p-3 mb-2 cursor-pointer" data-index="${index}">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h6 class="mb-1">${addr.firstName} ${addr.lastName}</h6>
-                                <p class="mb-1 text-muted">${addr.address}</p>
-                                <p class="mb-0 text-muted">${addr.city}, ${addr.state} - ${addr.pincode}</p>
-                            </div>
-                            <button class="btn btn-sm btn-outline-primary">Use This</button>
-                        </div>
-                    </div>
-                `).join('');
-
-                    $list.html(addressHtml);
-                    $section.show();
-
-                    // Bind click events
-                    $list.find('.saved-address-item').on('click', (e) => {
-                        const index = $(e.currentTarget).data('index');
-                        this.fillSavedAddress(savedAddresses[index]);
+                $.post(window.location.href, formData)
+                    .done(function(response) {
+                        if (response.status === 'success') {
+                            const orderId = response.order_id;
+                            // If online, open Razorpay Checkout
+                            if (paymentMethod === 'online' && response.razorpay_order_id) {
+                                openRazorpayCheckout(response, orderId);
+                            } else {
+                                // COD — call processPayment to confirm order (as before)
+                                processPaymentAjax(orderId, paymentMethod, button);
+                            }
+                        } else {
+                            alert('Error: ' + response.message);
+                            button.prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                        }
+                    })
+                    .fail(function() {
+                        alert('Error creating order. Please try again.');
+                        button.prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
                     });
-                }
-            }
+            });
 
-            fillSavedAddress(address) {
-                Object.keys(address).forEach(key => {
-                    const $field = $('#' + key);
-                    if ($field.length) {
-                        $field.val(address[key]);
-                        if (key === 'pincode') {
-                            this.fetchLocationData(address[key]);
+            function openRazorpayCheckout(response, orderId) {
+                const options = {
+                    key: response.razorpay_key, // public key
+                    amount: Math.round(response.amount * 100), // rupees -> paise
+                    currency: 'INR',
+                    name: 'CycleCity',
+                    description: 'Order #' + orderId,
+                    order_id: response.razorpay_order_id,
+                    prefill: {
+                        name: response.shipping?.full_name || $('#fullName').val() || '',
+                        contact: response.shipping?.phone || $('#phone').val() || ''
+                        // optionally: email
+                    },
+                    handler: function(res) {
+                        // res.razorpay_payment_id, res.razorpay_signature, res.razorpay_order_id
+                        // Post to server to verify & finalize
+                        $.post(window.location.href, {
+                            action: 'process_payment',
+                            order_id: orderId,
+                            payment_method: 'online',
+                            razorpay_payment_id: res.razorpay_payment_id,
+                            razorpay_order_id: res.razorpay_order_id,
+                            razorpay_signature: res.razorpay_signature
+                        }).done(function(result) {
+                            if (result.status === 'success') {
+                                alert(result.message);
+                                window.location.href = result.redirect || 'orders.php';
+                            } else {
+                                alert('Payment verification failed: ' + result.message);
+                                $('#placeOrderBtn').prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                            }
+                        }).fail(function() {
+                            alert('Server error verifying payment.');
+                            $('#placeOrderBtn').prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                        });
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            // user closed the checkout; re-enable button
+                            $('#placeOrderBtn').prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
                         }
                     }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function(response) {
+                    alert('Payment failed: ' + (response.error && response.error.description ? response.error.description : 'Unknown'));
+                    $('#placeOrderBtn').prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
                 });
+                rzp.open();
             }
 
-            setupRealTimeValidation() {
-                $('input, select').on('blur', function() {
-                    const $this = $(this);
-                    if ($this.is('[required]') && !$this.val().trim()) {
-                        $this.addClass('input-error');
-                    } else {
-                        $this.removeClass('input-error');
-                        $this.addClass('input-success');
-                    }
-                });
+            function processPaymentAjax(orderId, paymentMethod, button) {
+                $.post(window.location.href, {
+                        action: 'process_payment',
+                        order_id: orderId,
+                        payment_method: paymentMethod
+                    })
+                    .done(function(response) {
+                        if (response.status === 'success') {
+                            alert(response.message);
+                            window.location.href = response.redirect || 'orders.php';
+                        } else {
+                            alert('Error: ' + response.message);
+                            button.prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                        }
+                    })
+                    .fail(function() {
+                        alert('Error processing payment. Please try again.');
+                        button.prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                    });
             }
 
-            setupAutoSave() {
-                $('input, select').on('change', () => {
-                    this.saveFormData();
-                });
-            }
+            // Place Order button
+            /*
+            $('#placeOrderBtn').click(function() {
+                const button = $(this);
+                button.prop('disabled', true).html('<i class="ph ph-spinner me-2"></i>Processing...');
 
-            async placeOrder() {
-                const $btn = $('#placeOrderBtn');
-                $btn.addClass('loading');
-                $btn.prop('disabled', true);
+                // Get form data
+                const formData = {
+                    action: 'create_order',
+                    selected_address: $('input[name="selected_address"]:checked').val(),
+                    full_name: $('#fullName').val(),
+                    phone: $('#phone').val(),
+                    address_line1: $('#addressLine1').val(),
+                    address_line2: $('#addressLine2').val(),
+                    city: $('#city').val(),
+                    state: $('#state').val(),
+                    postal_code: $('#postalCode').val(),
+                    country: 'India'
+                };
 
-                try {
-                    // Simulate order processing
-                    await this.processOrder();
-
-                    // Show success message
-                    this.showOrderSuccess();
-
-                } catch (error) {
-                    this.showError('Failed to place order. Please try again.');
-                } finally {
-                    $btn.removeClass('loading');
-                    $btn.prop('disabled', false);
+                if (appliedCoupon) {
+                    formData.coupon_code = appliedCoupon.code;
                 }
+
+                // Create order first
+                $.post(window.location.href, formData)
+                    .done(function(response) {
+                        if (response.status === 'success') {
+                            orderId = response.order_id;
+                            processPayment();
+                        } else {
+                            alert('Error: ' + response.message);
+                            button.prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                        }
+                    })
+                    .fail(function() {
+                        alert('Error creating order. Please try again.');
+                        button.prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                    });
+            });
+*/
+            // Process payment
+            function processPayment() {
+                const paymentMethod = $('input[name="payment_method"]:checked').val();
+
+                const paymentData = {
+                    action: 'process_payment',
+                    order_id: orderId,
+                    payment_method: paymentMethod
+                };
+
+                if (paymentMethod === 'online') {
+                    // For online payment, you can add transaction_id here
+                    // This is a simplified version - integrate with actual payment gateway
+                    paymentData.transaction_id = 'TXN_' + orderId + '_' + Date.now();
+                }
+
+                $.post(window.location.href, paymentData)
+                    .done(function(response) {
+                        if (response.status === 'success') {
+                            alert(response.message);
+                            if (response.redirect) {
+                                window.location.href = response.redirect;
+                            } else {
+                                window.location.href = 'orders.php';
+                            }
+                        } else {
+                            alert('Error: ' + response.message);
+                            $('#placeOrderBtn').prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                        }
+                    })
+                    .fail(function() {
+                        alert('Error processing payment. Please try again.');
+                        $('#placeOrderBtn').prop('disabled', false).html('<i class="ph ph-check me-2"></i>Place Order');
+                    });
             }
 
-            async processOrder() {
-                // Simulate API call
-                return new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve({
-                            orderId: 'CYC' + Math.random().toString(36).substr(2, 9).toUpperCase()
-                        });
-                    }, 2000);
-                });
-            }
-
-            showOrderSuccess() {
-                // Replace checkout with success message
-                $('main').html(`
-                <div class="container-fluid text-center py-5">
-                    <div class="row justify-content-center">
-                        <div class="col-md-6">
-                            <div class="success-animation mb-4">
-                                <i class="ph ph-check-circle text-success" style="font-size: 4rem;"></i>
-                            </div>
-                            <h2 class="text-success mb-3">Order Placed Successfully!</h2>
-                            <p class="text-muted mb-4">Thank you for your purchase. Your order is being processed and you'll receive a confirmation email shortly.</p>
-                            <div class="d-flex justify-content-center gap-3">
-                                <a href="index.html" class="btn-secondary">Continue Shopping</a>
-                                <a href="account.html" class="btn btn-outline-primary">Track Order</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `);
-            }
-
-            showError(message) {
-                // Create toast notification
-                const $toast = $(`
-                <div class="toast-notification bg-danger text-white p-3 rounded position-fixed" style="top: 20px; right: 20px; z-index: 9999;">
-                    <div class="d-flex align-items-center">
-                        <i class="ph ph-warning-circle me-2"></i>
-                        <span>${message}</span>
-                    </div>
-                </div>
-            `);
-
-                $('body').append($toast);
-
-                setTimeout(() => {
-                    $toast.remove();
-                }, 3000);
-            }
-
-            initializeFormValidation() {
-                // Any additional initialization can go here
-            }
-        }
-
-        // Initialize checkout when DOM is ready
-        $(document).ready(() => {
-            new EnhancedCheckout();
+            // Initialize
+            showStep(1);
         });
     </script>
-
 </body>
 
 </html>

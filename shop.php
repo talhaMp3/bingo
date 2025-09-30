@@ -1,48 +1,4 @@
 <?php
-/*
-session_start();
-include_once './include/connection.php';
-include_once './layout/header.php';
-$user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : null;
-$category_slug = $_GET['category'] ?? null;
-
-$base_query = "
-SELECT 
-    products.*, 
-    categories.name AS category_name, 
-    categories.slug AS category_slug,
-    IF(wishlist.id IS NOT NULL, 1, 0) AS in_wishlist
-FROM 
-    products
-JOIN 
-    categories ON products.category_id = categories.id
-LEFT JOIN 
-    wishlist ON wishlist.product_id = products.id AND wishlist.user_id = ?
-WHERE 
-    products.status = 'active'
-";
-
-// add category filter if slug is set
-if (!empty($category_slug)) {
-    $base_query .= " AND categories.slug = ? ";
-}
-
-$base_query .= " ORDER BY products.name ASC";
-
-// prepare
-$stmt = $conn->prepare($base_query);
-
-if (!empty($category_slug)) {
-    $stmt->bind_param("is", $user_id, $category_slug); // i=int (user_id), s=string (slug)
-} else {
-    $stmt->bind_param("i", $user_id);
-}
-
-$stmt->execute();
-$products_result = $stmt->get_result();
-*/
-?>
-<?php
 session_start();
 include_once './include/connection.php';
 include_once './layout/header.php';

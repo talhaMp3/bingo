@@ -61,7 +61,7 @@ if (isset($_SESSION['user_id'])) {
 
     <script defer src="/assets/js/main.js"></script>
     <link href="/assets/css/style.css" rel="stylesheet" />
-    <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=68875bd39b73432f18d61440&product=sop' async='async'></script>
+    <!-- <script type='text/javascript' src='https://platform-api.sharethis.com/js/sharethis.js#property=68875bd39b73432f18d61440&product=sop' async='async'></script> -->
 </head>
 
 <body>
@@ -356,95 +356,6 @@ if (isset($_SESSION['user_id'])) {
                         </nav>
                         <!-- search bar area -->
                         <!-- search bar area -->
-                        <div class="search-bar search-form-wrapper position-relative">
-                            <form
-                                action="#"
-                                class="header-search-form d-flex align-items-center gap-3 py-lg-3 py-2 px-xxl-6 px-md-4 px-3 radius-pill border border-n100-6 bg-n20 w-100 focus-secondary2">
-                                <input
-                                    type="text"
-                                    id="searchInput"
-                                    placeholder="Search Bikes, Gear & Accessories"
-                                    class="w-100 border-0 outline-0 bg-transparent"
-                                    autocomplete="off" />
-                                <button type="submit" class="text-xl border-0 bg-transparent p-0">
-                                    <i class="ph ph-magnifying-glass"></i>
-                                </button>
-                            </form>
-
-                            <button
-                                type="button"
-                                class="search-close-btn text-2xl position-absolute top-0 end-0 translate-middle me-5 mt-10 p-sm-2 p-1 bg-primary2 text-n0 d-xl-none">
-                                <i class="ph ph-x"></i>
-                            </button>
-
-                            <!-- Search Results Container -->
-                            <div id="search-results"
-                                class="position-absolute top-100 start-0 mt-2 w-100 bg-white border rounded shadow-lg"
-                                style="display: none; z-index: 1000; max-height: 400px; overflow-y: auto;">
-
-                                <!-- Loading State -->
-                                <div id="loading-state" class="text-center py-4" style="display: none;">
-                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                        <span class="visually-hidden">Searching...</span>
-                                    </div>
-                                    <p class="mt-2 mb-0 text-muted">Searching...</p>
-                                </div>
-
-                                <!-- No Results State -->
-                                <div id="no-results" class="text-center py-4" style="display: none;">
-                                    <i class="ph ph-magnifying-glass text-muted" style="font-size: 2rem;"></i>
-                                    <p class="mt-2 mb-0 text-muted">No results found for "<span id="search-term"></span>"</p>
-                                </div>
-
-                                <!-- Static Suggestions (shown when empty or no query) -->
-                                <div id="static-suggestions" class="p-3">
-                                    <p class="fw-bold mb-3 text-secondary fs-6">Popular Searches</p>
-                                    <div class="row g-0">
-                                        <div class="col-12">
-                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Mountain Bike">
-                                                <span class="me-3">🚴</span>
-                                                <span>Mountain Bike</span>
-                                                <small class="ms-auto text-muted">Popular</small>
-                                            </a>
-                                        </div>
-                                        <div class="col-12">
-                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Road Bike">
-                                                <span class="me-3">🚴‍♀️</span>
-                                                <span>Road Bike</span>
-                                                <small class="ms-auto text-muted">Trending</small>
-                                            </a>
-                                        </div>
-                                        <div class="col-12">
-                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Cycling Helmet">
-                                                <span class="me-3">⚙️</span>
-                                                <span>Cycling Helmet</span>
-                                                <small class="ms-auto text-muted">Safety</small>
-                                            </a>
-                                        </div>
-                                        <div class="col-12">
-                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Riding Glasses">
-                                                <span class="me-3">🕶️</span>
-                                                <span>Riding Glasses</span>
-                                                <small class="ms-auto text-muted">Accessories</small>
-                                            </a>
-                                        </div>
-                                        <div class="col-12">
-                                            <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="Bike Backpack">
-                                                <span class="me-3">🎒</span>
-                                                <span>Bike Backpack</span>
-                                                <small class="ms-auto text-muted">Gear</small>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Dynamic Search Results (for future AJAX) -->
-                                <div id="search-results-content" style="display: none;">
-                                    <!-- Results will be populated here via AJAX -->
-                                </div>
-                            </div>
-                        </div>
-
                         <style>
                             .hover-bg-light:hover {
                                 background-color: #f8f9fa !important;
@@ -466,67 +377,149 @@ if (isset($_SESSION['user_id'])) {
                             }
                         </style>
 
+                        <div class="search-bar search-form-wrapper position-relative">
+                            <form action="shop.php" method="GET" class="header-search-form d-flex align-items-center gap-3 py-lg-3 py-2 px-xxl-6 px-md-4 px-3 radius-pill border border-n100-6 bg-n20 w-100 focus-secondary2">
+                                <input
+                                    type="text"
+                                    id="searchInput"
+                                    name="q"
+                                    placeholder="Search Bikes, Gear & Accessories"
+                                    class="w-100 border-0 outline-0 bg-transparent"
+                                    autocomplete="off" />
+                                <button type="submit" class="text-xl border-0 bg-transparent p-0">
+                                    <i class="ph ph-magnifying-glass"></i>
+                                </button>
+                            </form>
+
+                            <button
+                                type="button"
+                                class="search-close-btn text-2xl position-absolute top-0 end-0 translate-middle me-5 mt-10 p-sm-2 p-1 bg-primary2 text-n0 d-xl-none">
+                                <i class="ph ph-x"></i>
+                            </button>
+
+                            <!-- Search Results Container -->
+                            <div id="search-results"
+                                class="position-absolute top-100 start-0 mt-2 w-100 bg-white border rounded shadow-lg"
+                                style="display: none; z-index: 1000; max-height: 500px; overflow-y: auto;">
+
+                                <!-- Loading State -->
+                                <div id="loading-state" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Searching...</span>
+                                    </div>
+                                    <p class="mt-2 mb-0 text-muted">Searching...</p>
+                                </div>
+
+                                <!-- No Results State -->
+                                <div id="no-results" class="text-center py-4" style="display: none;">
+                                    <i class="ph ph-magnifying-glass text-muted" style="font-size: 2rem;"></i>
+                                    <p class="mt-2 mb-0 text-muted">No results found for "<span id="search-term"></span>"</p>
+                                    <small class="text-muted">Try different keywords or browse our categories</small>
+                                </div>
+
+                                <!-- Static Suggestions -->
+                                <div id="static-suggestions" class="p-3">
+                                    <p class="section-title">Popular Searches</p>
+                                    <div class="row g-0">
+                                        <div class="col-12">
+                                            <a href="shop.php?q=Mountain+Bike" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light">
+                                                <span class="me-3">🚴</span>
+                                                <span>Mountain Bike</span>
+                                                <small class="ms-auto text-muted">Popular</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="shop.php?q=Road+Bike" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light">
+                                                <span class="me-3">🚴‍♀️</span>
+                                                <span>Road Bike</span>
+                                                <small class="ms-auto text-muted">Trending</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="shop.php?q=Cycling+Helmet" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light">
+                                                <span class="me-3">⚙️</span>
+                                                <span>Cycling Helmet</span>
+                                                <small class="ms-auto text-muted">Safety</small>
+                                            </a>
+                                        </div>
+                                        <div class="col-12">
+                                            <a href="shop.php?q=Electric+Bike" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light">
+                                                <span class="me-3">⚡</span>
+                                                <span>Electric Bike</span>
+                                                <small class="ms-auto text-muted">Trending</small>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Dynamic Search Results -->
+                                <div id="search-results-content" style="display: none;">
+                                    <!-- Results will be populated here via AJAX -->
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
                         <script>
                             class SearchManager {
                                 constructor() {
-                                    this.searchInput = document.getElementById('searchInput');
-                                    this.searchResults = document.getElementById('search-results');
-                                    this.staticSuggestions = document.getElementById('static-suggestions');
-                                    this.loadingState = document.getElementById('loading-state');
-                                    this.noResults = document.getElementById('no-results');
-                                    this.searchResultsContent = document.getElementById('search-results-content');
-                                    this.searchTerm = document.getElementById('search-term');
+                                    this.searchInput = $('#searchInput');
+                                    this.searchResults = $('#search-results');
+                                    this.staticSuggestions = $('#static-suggestions');
+                                    this.loadingState = $('#loading-state');
+                                    this.noResults = $('#no-results');
+                                    this.searchResultsContent = $('#search-results-content');
+                                    this.searchTerm = $('#search-term');
 
                                     this.debounceTimer = null;
                                     this.minQueryLength = 2;
                                     this.debounceDelay = 300;
+                                    this.currentRequest = null;
 
                                     this.init();
                                 }
 
                                 init() {
                                     // Input event with debouncing
-                                    this.searchInput.addEventListener('input', (e) => {
+                                    this.searchInput.on('input', (e) => {
                                         clearTimeout(this.debounceTimer);
                                         this.debounceTimer = setTimeout(() => {
-                                            this.handleSearch(e.target.value.trim());
+                                            this.handleSearch($(e.target).val().trim());
                                         }, this.debounceDelay);
                                     });
 
                                     // Focus event - show suggestions
-                                    this.searchInput.addEventListener('focus', () => {
-                                        if (this.searchInput.value.trim().length === 0) {
+                                    this.searchInput.on('focus', () => {
+                                        if (this.searchInput.val().trim().length === 0) {
                                             this.showStaticSuggestions();
                                         } else {
-                                            this.handleSearch(this.searchInput.value.trim());
+                                            this.handleSearch(this.searchInput.val().trim());
                                         }
                                     });
 
                                     // Click outside to close
-                                    document.addEventListener('click', (e) => {
-                                        if (!this.searchInput.contains(e.target) && !this.searchResults.contains(e.target)) {
+                                    $(document).on('click', (e) => {
+                                        if (!$(e.target).closest('#searchInput, #search-results').length) {
                                             this.hideResults();
                                         }
                                     });
 
                                     // Handle suggestion clicks
-                                    this.searchResults.addEventListener('click', (e) => {
-                                        const suggestionItem = e.target.closest('.suggestion-item');
-                                        if (suggestionItem) {
-                                            e.preventDefault();
-                                            const value = suggestionItem.dataset.value;
-                                            this.selectSuggestion(value);
-                                        }
+                                    this.searchResults.on('click', '.suggestion-item', (e) => {
+                                        e.preventDefault();
+                                        const value = $(e.currentTarget).data('value');
+                                        this.selectSuggestion(value);
                                     });
 
                                     // Handle form submission
-                                    this.searchInput.closest('form').addEventListener('submit', (e) => {
+                                    this.searchInput.closest('form').on('submit', (e) => {
                                         e.preventDefault();
-                                        this.performSearch(this.searchInput.value.trim());
+                                        this.performSearch(this.searchInput.val().trim());
                                     });
 
-                                    // Keyboard navigation (future enhancement)
-                                    this.searchInput.addEventListener('keydown', (e) => {
+                                    // Keyboard navigation
+                                    this.searchInput.on('keydown', (e) => {
                                         this.handleKeyNavigation(e);
                                     });
                                 }
@@ -542,48 +535,41 @@ if (isset($_SESSION['user_id'])) {
                                         return;
                                     }
 
-                                    // Show loading state
-                                    this.showLoadingState();
-
-                                    // Simulate search delay (replace with actual AJAX call)
-                                    setTimeout(() => {
-                                        this.performStaticSearch(query);
-                                    }, 500);
-                                }
-
-                                performStaticSearch(query) {
-                                    // Static search logic (replace with AJAX call later)
-                                    const staticData = [
-                                        'Mountain Bike', 'Road Bike', 'Hybrid Bike', 'Electric Bike',
-                                        'Cycling Helmet', 'Bike Lock', 'Riding Glasses', 'Bike Lights',
-                                        'Bike Backpack', 'Water Bottle', 'Bike Pump', 'Cycling Shorts'
-                                    ];
-
-                                    const results = staticData.filter(item =>
-                                        item.toLowerCase().includes(query.toLowerCase())
-                                    );
-
-                                    if (results.length > 0) {
-                                        this.showSearchResults(results, query);
-                                    } else {
-                                        this.showNoResults(query);
+                                    // Cancel previous request if still pending
+                                    if (this.currentRequest) {
+                                        this.currentRequest.abort();
                                     }
+
+                                    this.showLoadingState();
+                                    this.performAjaxSearch(query);
                                 }
 
-                                // Future method for AJAX search
                                 async performAjaxSearch(query) {
                                     try {
-                                        // Example AJAX structure for future implementation
-                                        /*
-                                        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                                        const data = await response.json();
-                                        
-                                        if (data.results && data.results.length > 0) {
-                                            this.showSearchResults(data.results, query);
-                                        } else {
-                                            this.showNoResults(query);
-                                        }
-                                        */
+                                        this.currentRequest = $.ajax({
+                                            url: '../functions/search.php',
+                                            method: 'GET',
+                                            data: {
+                                                q: query
+                                            },
+                                            dataType: 'json',
+                                            success: (data) => {
+                                                if (data.results && data.results.length > 0) {
+                                                    this.showSearchResults(data.results, query);
+                                                } else {
+                                                    this.showNoResults(query);
+                                                }
+                                            },
+                                            error: (xhr, status, error) => {
+                                                if (status !== 'abort') {
+                                                    console.error('Search error:', error);
+                                                    this.showNoResults(query);
+                                                }
+                                            },
+                                            complete: () => {
+                                                this.currentRequest = null;
+                                            }
+                                        });
                                     } catch (error) {
                                         console.error('Search error:', error);
                                         this.showNoResults(query);
@@ -592,78 +578,175 @@ if (isset($_SESSION['user_id'])) {
 
                                 showStaticSuggestions() {
                                     this.hideAllStates();
-                                    this.staticSuggestions.style.display = 'block';
-                                    this.searchResults.style.display = 'block';
+                                    this.staticSuggestions.show();
+                                    this.searchResults.show();
                                 }
 
                                 showLoadingState() {
                                     this.hideAllStates();
-                                    this.loadingState.style.display = 'block';
-                                    this.searchResults.style.display = 'block';
+                                    this.loadingState.show();
+                                    this.searchResults.show();
                                 }
 
                                 showNoResults(query) {
                                     this.hideAllStates();
-                                    this.searchTerm.textContent = query;
-                                    this.noResults.style.display = 'block';
-                                    this.searchResults.style.display = 'block';
+                                    this.searchTerm.text(query);
+                                    this.noResults.show();
+                                    this.searchResults.show();
                                 }
 
                                 showSearchResults(results, query) {
                                     this.hideAllStates();
 
-                                    // Generate results HTML
                                     let resultsHTML = `<div class="p-3">
             <p class="fw-bold mb-3 text-secondary fs-6">Search Results for "${query}"</p>
-            <div class="row g-0">`;
+            <div class="search-results-list">`;
 
-                                    results.forEach(result => {
-                                        resultsHTML += `
-                <div class="col-12">
-                    <a href="#" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light suggestion-item" data-value="${result}">
-                        <span class="me-3">🔍</span>
-                        <span>${result}</span>
-                    </a>
-                </div>`;
-                                    });
+                                    // Group results by type
+                                    const products = results.filter(r => r.type === 'product');
+                                    const categories = results.filter(r => r.type === 'category');
+                                    const brands = results.filter(r => r.type === 'brand');
 
-                                    resultsHTML += '</div></div>';
+                                    // Show products
+                                    if (products.length > 0) {
+                                        resultsHTML += `<div class="mb-4">
+                <h6 class="fw-semibold text-primary mb-2">Products (${products.length})</h6>`;
 
-                                    this.searchResultsContent.innerHTML = resultsHTML;
-                                    this.searchResultsContent.style.display = 'block';
-                                    this.searchResults.style.display = 'block';
+                                        products.forEach(product => {
+                                            const price = product.discount_price > 0 ?
+                                                `<span class="text-danger fw-bold">₹${product.discount_price}</span> 
+                     <span class="text-muted text-decoration-line-through small">₹${product.price}</span>` :
+                                                `<span class="fw-bold">₹${product.price}</span>`;
+
+                                            resultsHTML += `
+                <a href="${product.url}" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light search-result-item">
+                    <img src="./assets/uploads/product/${product.image}" alt="${product.name}" 
+                         class="me-3 rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">${this.escapeHtml(product.name)}</div>
+                        <small class="text-muted">${this.escapeHtml(product.brand)} • ${this.escapeHtml(product.category)}</small>
+                    </div>
+                    <div class="text-end">
+                        ${price}
+                    </div>
+                </a>`;
+                                        });
+                                        resultsHTML += `</div>`;
+                                    }
+
+                                    // Show categories
+                                    // console.log(categories);
+
+                                    if (categories.length > 0) {
+                                        resultsHTML += `<div class="mb-4">
+                <h6 class="fw-semibold text-primary mb-2">Categories (${categories.length})</h6>`;
+
+                                        categories.forEach(category => {
+                                            resultsHTML += `
+                    <a href="${category.url}" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light search-result-item">
+                        <span class="me-3">📁</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-medium">${this.escapeHtml(category.name)}</div>
+                            ${category.description ? `<small class="text-muted">${this.escapeHtml(category.description)}</small>` : ''}
+                        </div>
+                    </a>`;
+                                        });
+                                        resultsHTML += `</div>`;
+                                    }
+
+                                    // Show brands
+                                    if (brands.length > 0) {
+                                        resultsHTML += `<div class="mb-2">
+                <h6 class="fw-semibold text-primary mb-2">Brands (${brands.length})</h6>`;
+
+                                        brands.forEach(brand => {
+                                            resultsHTML += `
+                <a href="${brand.url}" class="d-flex align-items-center py-2 px-2 text-decoration-none text-dark rounded hover-bg-light search-result-item">
+                    ${brand.image ? 
+                        `<img src="/uploads/brands/${brand.image}" alt="${brand.name}" 
+                              class="me-3 rounded" style="width: 30px; height: 30px; object-fit: contain;">` :
+                        `<span class="me-3">🏷️</span>`
+                    }
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">${this.escapeHtml(brand.name)}</div>
+                        ${brand.description ? `<small class="text-muted">${this.escapeHtml(brand.description)}</small>` : ''}
+                    </div>
+                </a>`;
+                                        });
+                                        resultsHTML += `</div>`;
+                                    }
+
+                                    resultsHTML += `</div></div>`;
+
+                                    this.searchResultsContent.html(resultsHTML);
+                                    this.searchResultsContent.show();
+                                    this.searchResults.show();
                                 }
 
                                 hideAllStates() {
-                                    this.staticSuggestions.style.display = 'none';
-                                    this.loadingState.style.display = 'none';
-                                    this.noResults.style.display = 'none';
-                                    this.searchResultsContent.style.display = 'none';
+                                    this.staticSuggestions.hide();
+                                    this.loadingState.hide();
+                                    this.noResults.hide();
+                                    this.searchResultsContent.hide();
                                 }
 
                                 hideResults() {
-                                    this.searchResults.style.display = 'none';
+                                    this.searchResults.hide();
                                 }
 
                                 selectSuggestion(value) {
-                                    this.searchInput.value = value;
+                                    this.searchInput.val(value);
                                     this.hideResults();
                                     this.performSearch(value);
                                 }
 
                                 performSearch(query) {
-                                    console.log('Performing search for:', query);
-                                    // Add your search logic here
+                                    // Redirect to search results page or handle search
+                                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
                                 }
 
                                 handleKeyNavigation(e) {
-                                    // Future implementation for arrow key navigation
-                                    // This would allow users to navigate through suggestions with keyboard
+                                    const items = this.searchResults.find('.search-result-item, .suggestion-item');
+                                    const currentActive = items.filter('.active');
+                                    let newActive;
+
+                                    switch (e.key) {
+                                        case 'ArrowDown':
+                                            e.preventDefault();
+                                            newActive = currentActive.length ? currentActive.next() : items.first();
+                                            break;
+                                        case 'ArrowUp':
+                                            e.preventDefault();
+                                            newActive = currentActive.length ? currentActive.prev() : items.last();
+                                            break;
+                                        case 'Enter':
+                                            if (currentActive.length) {
+                                                e.preventDefault();
+                                                currentActive[0].click();
+                                            }
+                                            return;
+                                        case 'Escape':
+                                            this.hideResults();
+                                            return;
+                                        default:
+                                            return;
+                                    }
+
+                                    items.removeClass('active');
+                                    if (newActive.length) {
+                                        newActive.addClass('active');
+                                    }
+                                }
+
+                                escapeHtml(text) {
+                                    const div = document.createElement('div');
+                                    div.textContent = text;
+                                    return div.innerHTML;
                                 }
                             }
 
                             // Initialize search manager when DOM is loaded
-                            document.addEventListener('DOMContentLoaded', () => {
+                            $(document).ready(() => {
                                 new SearchManager();
                             });
                         </script>
