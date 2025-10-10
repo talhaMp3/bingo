@@ -1,7 +1,7 @@
 <?php
 session_start();
-include_once '../layout/header.php';
 include_once '../include/connection.php';
+include_once '../layout/header.php';
 ?>
 <!-- main start -->
 <main class="pt-lg-6">

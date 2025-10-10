@@ -833,7 +833,7 @@
                 <div class="cart-item d-flex justify-content-between gap-4">
                     <div class="d-flex align-items-center gap-4">
                         <div class="cart-item-thumb">
-                            <img class="w-100" src="assets/images/${firstImage}" alt="cart item" />
+                            <img class="w-50" src="assets/uploads/product/${firstImage}" alt="cart item" />
                         </div>
                         <div class="cart-item-info">
                             <span class="d-block text-n100 text-base fw-medium">${item.name} ${item.qty}</span>

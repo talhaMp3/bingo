@@ -835,21 +835,17 @@ if (isset($_SESSION['user_id'])) {
                         </button>
                     </div>
                     <!-- free shipping progress -->
-                    <div
-                        class="free-shipping-progress py-3xl-5 py-lg-3 py-2 px-xl-8 px-md-6 px-4 bg-n20 mb-4xl-10 mb-lg-8 mb-md-6 mb-4">
+                    <div class="free-shipping-progress py-3xl-5 py-lg-3 py-2 px-xl-8 px-md-6 px-4 bg-n20 mb-4xl-10 mb-lg-8 mb-md-6 mb-4">
                         <div class="progress-bar">
-                            <div class="progress-bar-inner" style="width: 50%">
+                            <div class="progress-bar-inner" style="width: 80%">
                                 <span class="car-icon">
                                     <i class="ph ph-truck"></i>
                                 </span>
                             </div>
                         </div>
-                        <!-- <span class="text-n100 text-sm fw-normal">Spend $100.00 more to enjoy <span class="text-secondary2">FREE
-                                 SHIPPING!</span></span> -->
-                        <span class="text-n100 text-sm fw-normal">Spend $53.00 more to enjoy
-                            <span class="text-secondary2">FREE SHIPPING!</span></span>
-                        <!-- <span class="text-n100 text-sm fw-normal">Congratulations! You've got <span class="text-secondary2">FREE
-                                 SHIPPING!</span></span> -->
+                        <!-- <span class="text-n100 text-sm fw-normal">Spend $100.00 more to enjoy <span class="text-secondary2">FREE SHIPPING!</span></span> -->
+                        <!-- <span class="text-n100 text-sm fw-normal">Spend $53.00 more to enjoy <span class="text-secondary2">FREE SHIPPING!</span></span> -->
+                        <!-- <span class="text-n100 text-sm fw-normal">Congratulations! You've got <span class="text-secondary2">FREE SHIPPING!</span></span> -->
                     </div>
                 </div>
                 <div class="cart-box-bottom">
@@ -954,9 +950,9 @@ if (isset($_SESSION['user_id'])) {
                                     <!-- <a
                                         href="cart.html"
                                         class="d-block text-center text-n100 fw-medium py-lg-3 py-2 px-lg-6 px-4 border border-n100 bg-n0 hover-text-n0 hover-bg-n100">View Cart</a> -->
-                                    <a
+                                    <acd 
                                         href="checkout.php"
-                                        class="d-block text-center text-n0 fw-medium py-lg-3 py-2 px-lg-6 px-4 border-0 bg-secondary2 hover-text-n0 hover-bg-n100">Checkout</a>
+                                        class="d-block text-center text-n0 fw-medium py-lg-3 py-2 px-lg-6 px-4 border-0 bg-secondary2 hover-text-n0 hover-bg-n100">Checkout</acd>
                                 </div>
                             </div>
                         </div>

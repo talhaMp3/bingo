@@ -8,11 +8,11 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
-
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? "Guest";
 $userEmail = $_SESSION['user_email'] ?? "";
 
+/*
 // Fetch orders with item count
 $sql = "
     SELECT o.id, o.total_amount, o.status, o.payment_status, o.created_at,
@@ -37,7 +37,47 @@ while ($row = $result->fetch_assoc()) {
         'total' => '$' . number_format($row['total_amount'], 2),
         'items' => $row['items'] . ' ' . ($row['items'] > 1 ? 'items' : 'item')
     ];
+}*/
+// Fetch orders with item count and promo info
+$sql = "
+    SELECT o.id, o.total_amount, o.status, o.payment_status, o.created_at,
+           COUNT(oi.id) AS items,
+           c.code AS promo_code, c.discount_type, c.amount AS discount_amount
+    FROM orders o
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    LEFT JOIN coupon_usage cu ON cu.order_id = o.id
+    LEFT JOIN coupons c ON cu.coupon_id = c.id
+    WHERE o.user_id = ?
+    GROUP BY o.id
+    ORDER BY o.created_at DESC
+";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$orders = [];
+while ($row = $result->fetch_assoc()) {
+    $promoText = '';
+    if (!empty($row['promo_code'])) {
+        if ($row['discount_type'] === 'percentage') {
+            $promoText = "({$row['promo_code']} - {$row['discount_amount']}% off)";
+        } else {
+            $promoText = "({$row['promo_code']} - ₹" . number_format($row['discount_amount'], 2) . " off)";
+        }
+    }
+
+    $orders[] = [
+        'id' => $row['id'],
+        'date' => date("F d, Y", strtotime($row['created_at'])),
+        'status' => ucfirst($row['status']),
+        'total' => '₹' . number_format($row['total_amount'], 2),
+        'items' => $row['items'] . ' ' . ($row['items'] > 1 ? 'items' : 'item'),
+        'promo' => $promoText
+    ];
 }
+
 ?>
 
 
@@ -133,7 +173,11 @@ while ($row = $result->fetch_assoc()) {
                                                     <td class="p-4">
                                                         <span class="fw-semibold text-success"><?= htmlspecialchars($order['total']) ?></span>
                                                         <small class="text-muted d-block"><?= htmlspecialchars($order['items']) ?></small>
+                                                        <?php if (!empty($order['promo'])): ?>
+                                                            <small class="text-danger d-block fw-semibold"><?= htmlspecialchars($order['promo']) ?></small>
+                                                        <?php endif; ?>
                                                     </td>
+
                                                     <td class="p-4">
                                                         <a href="order-details.php?id=<?= $order['id'] ?>"
                                                             class="btn btn-sm btn-success px-4 py-2 radius-8">
@@ -165,157 +209,6 @@ while ($row = $result->fetch_assoc()) {
     </section>
 </main>
 
-<style>
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #eb453b 0%, #fb7871ff 100%);
-    }
 
-    .text-white-80 {
-        color: rgba(255, 255, 255, 0.8);
-    }
-
-    .hover-shadow {
-        transition: all 0.3s ease;
-    }
-
-    .hover-shadow:hover {
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-
-    .hover-bg-n50:hover {
-        background-color: #f8fafc;
-    }
-
-    .dashboard-nav a.active,
-    .dashboard-nav a:hover {
-        background-color: #f1f5f9;
-        color: #eb453b;
-    }
-
-    .transition-all {
-        transition: all 0.3s ease;
-    }
-
-    .text-4xl {
-        font-size: 2.25rem;
-    }
-
-    .primary-600 {
-        color: #eb453b;
-    }
-
-    .danger-600 {
-        color: #dc2626;
-    }
-
-    .dashboard-item:hover {
-        text-decoration: none;
-    }
-
-    .dashboard-item:hover .dashboard-item-icon i {
-        transform: scale(1.1);
-        transition: transform 0.3s ease;
-    }
-
-    /* Orders Table Styles */
-    .orders-table-container {
-        overflow: hidden;
-    }
-
-    .table-header {
-        background-color: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .table-header th {
-        border: none;
-        font-size: 13px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-    }
-
-    .table-row {
-        border-bottom: 1px solid #f1f5f9;
-        transition: background-color 0.2s ease;
-    }
-
-    .table-row:hover {
-        background-color: #f8fafc;
-    }
-
-    .table-row:last-child {
-        border-bottom: none;
-    }
-
-    .table-row td {
-        border: none;
-        vertical-align: middle;
-    }
-
-    /* Status Badges */
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: capitalize;
-    }
-
-    .status-processing {
-        background-color: #fef3c7;
-        color: #d97706;
-    }
-
-    .status-completed {
-        background-color: #d1fae5;
-        color: #059669;
-    }
-
-    .status-shipped {
-        background-color: #dbeafe;
-        color: #2563eb;
-    }
-
-    .status-cancelled {
-        background-color: #fee2e2;
-        color: #dc2626;
-    }
-
-    /* View Button */
-    .btn-success {
-        background-color: #10b981;
-        border-color: #10b981;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-
-    .btn-success:hover {
-        background-color: #059669;
-        border-color: #059669;
-    }
-
-    /* No Orders State */
-    .no-orders {
-        padding: 2rem;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .table-responsive {
-            font-size: 14px;
-        }
-
-        .table th,
-        .table td {
-            padding: 12px 8px;
-        }
-
-        .btn-sm {
-            font-size: 11px;
-            padding: 6px 12px;
-        }
-    }
-</style>
 
 <?php include_once './layout/footer.php'; ?>

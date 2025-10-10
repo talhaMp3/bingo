@@ -954,246 +954,115 @@ include_once './layout/header.php';
                 </div>
             </div>
             <div class="row g-0">
-                <div class="col-lg-4 col-xs-6">
-                    <!-- product item -->
-                    <div
-                        class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
-                        <div
-                            class="product-type py-lg-3 py-2 ps-lg-4 ps-2 pe-lg-6 pe-4 bg-secondary2 position-absolute top-0 start-0 parallelogram-path z-2">
-                            <span class="text-sm fw-medium text-n0">New</span>
-                        </div>
-                        <div class="product-thumb-wrapper position-relative">
-                            <button
-                                class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left"
-                                data-tooltip="Add to wishlist">
-                                <i class="ph ph-heart"></i>
-                            </button>
-                            <div class="product-thumb hover-cursor" data-hover-text="View Product">
-                                <a href="shop-details.html" class="product-thumb-link d-block">
-                                    <img class="w-100" src="assets/images/product-1.png" alt="product thumb">
-                                </a>
-                            </div>
-                        </div>
-                        <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
-                        <div class="product-info-wrapper">
-                            <div class="mb-xxl-7 mb-md-5 mb-3">
-                                <a href="shop-details.html">
-                                    <h4 class="text-n100 mb-2 hover-text-secondary2">City
-                                        Commuter
-                                    </h4>
-                                </a>
-                                <span class="text-sm fw-normal text-n50">Enduro</span>
-                            </div>
-                            <div class="d-between flex-wrap gap-4">
-                                <div class="d-grid">
-                                    <span class="text-sm fw-normal text-n50 text-decoration-underline">$21,599.00
-                                        USD</span>
-                                    <span class="text-xl fw-semibold text-secondary2">$ 14,599.00 USD</span>
+                <?php
+                // Fetch related products based on category
+                $related_query = "
+                SELECT 
+                    p.*, 
+                    c.name AS category_name, 
+                    c.slug AS category_slug,
+                    b.name AS brand_name,
+                    b.slug AS brand_slug
+                FROM 
+                    products p
+                LEFT JOIN 
+                    categories c ON p.category_id = c.id
+                LEFT JOIN 
+                    brands b ON p.brand_id = b.id
+                WHERE 
+                    p.category_id = {$product['category_id']}
+                    AND p.id != {$product_id}
+                    AND p.status = 'active'
+                ORDER BY 
+                    RAND()
+                LIMIT 6";
+
+                $related_result = mysqli_query($conn, $related_query);
+                $related_products = [];
+                while ($row = mysqli_fetch_assoc($related_result)) {
+                    $related_products[] = $row;
+                }
+                if (!empty($related_products)) {
+                    foreach ($related_products as $related) {
+                        // Decode images
+                        $related_images = json_decode($related['image'], true);
+                        $related_first_image = !empty($related_images[0]) ? $related_images[0] : 'placeholder.jpg';
+
+                        // Check if product is in wishlist
+                        if ($user_id) {
+                            $wishlist_check = mysqli_query($conn, "SELECT id FROM wishlist WHERE user_id = $user_id AND product_id = {$related['id']} AND variant_id IS NULL");
+                            $in_wishlist = mysqli_num_rows($wishlist_check) > 0;
+                        } else {
+                            $in_wishlist = false;
+                        }
+                ?>
+                        <div class="col-lg-4 col-xs-6">
+                            <!-- product item -->
+                            <div class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
+                                <?php if ($related['is_featured']) { ?>
+                                    <div class="product-type py-lg-3 py-2 ps-lg-4 ps-2 pe-lg-6 pe-4 bg-secondary2 position-absolute top-0 start-0 parallelogram-path z-2">
+                                        <span class="text-sm fw-medium text-n0">New</span>
+                                    </div>
+                                <?php } ?>
+
+                                <div class="product-thumb-wrapper position-relative">
+                                    <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left <?= $in_wishlist ? 'removeFromWishlist' : 'addToWishlist' ?>"
+                                        data-tooltip="<?= $in_wishlist ? 'Remove from wishlist' : 'Add to wishlist' ?>"
+                                        data-product="<?= $related['id'] ?>"
+                                        data-variant="">
+                                        <i class="ph <?= $in_wishlist ? 'ph-fill' : '' ?> ph-heart"></i>
+                                    </button>
+
+                                    <div class="product-thumb hover-cursor" data-hover-text="View Product">
+                                        <a href="shop-details.php?slug=<?= htmlspecialchars($related['slug']) ?>" class="product-thumb-link d-block">
+                                            <img class="w-100" src="./assets/uploads/product/<?= htmlspecialchars($related_first_image) ?>"
+                                                alt="<?= htmlspecialchars($related['name']) ?>"
+                                                onerror="this.src='./assets/uploads/product/placeholder.jpg'">
+                                        </a>
+                                    </div>
                                 </div>
-                                <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
-                                    TO CART </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-xs-6">
-                    <!-- product item -->
-                    <div
-                        class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
-                        <div class="product-thumb-wrapper position-relative">
-                            <button
-                                class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left"
-                                data-tooltip="Add to wishlist">
-                                <i class="ph ph-heart"></i>
-                            </button>
-                            <div class="product-thumb hover-cursor" data-hover-text="View Product">
-                                <a href="shop-details.html" class="product-thumb-link d-block">
-                                    <img class="w-100" src="assets/images/product-2.png" alt="product thumb">
-                                </a>
-                            </div>
-                        </div>
-                        <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
-                        <div class="product-info-wrapper">
-                            <div class="mb-xxl-7 mb-md-5 mb-3">
-                                <a href="shop-details.html">
-                                    <h4 class="text-n100 mb-2 hover-text-secondary2">
-                                        Urban Explorer
-                                    </h4>
-                                </a>
-                                <span class="text-sm fw-normal text-n50">Enduro</span>
-                            </div>
-                            <div class="d-between flex-wrap gap-4">
-                                <div class="d-grid">
-                                    <span class="text-sm fw-normal text-n50 text-decoration-underline">$21,599.00
-                                        USD</span>
-                                    <span class="text-xl fw-semibold text-secondary2">$ 14,599.00 USD</span>
+
+                                <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
+
+                                <div class="product-info-wrapper">
+                                    <div class="mb-xxl-7 mb-md-5 mb-3">
+                                        <a href="shop-details.php?slug=<?= htmlspecialchars($related['slug']) ?>">
+                                            <h4 class="text-n100 mb-2 hover-text-secondary2">
+                                                <?= htmlspecialchars($related['name']) ?>
+                                            </h4>
+                                        </a>
+                                        <span class="text-sm fw-normal text-n50"><?= htmlspecialchars($related['category_name']) ?></span>
+                                    </div>
+
+                                    <div class="d-between flex-wrap gap-4">
+                                        <div class="d-grid">
+                                            <?php if ($related['price'] > $related['discount_price']) { ?>
+                                                <span class="text-sm fw-normal text-n50 text-decoration-line-through">
+                                                    ₹<?= number_format($related['price'], 2) ?>
+                                                </span>
+                                            <?php } ?>
+                                            <span class="text-xl fw-semibold text-secondary2">
+                                                ₹<?= number_format($related['discount_price'], 2) ?>
+                                            </span>
+                                        </div>
+
+                                        <button class="outline-btn text-n100 fw-medium box-style box-secondary2 addToCart"
+                                            data-product="<?= $related['id'] ?>"
+                                            data-variant="">
+                                            ADD TO CART
+                                        </button>
+                                    </div>
                                 </div>
-                                <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
-                                    TO CART </a>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-xs-6">
-                    <!-- product item -->
-                    <div
-                        class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
-                        <div
-                            class="product-type py-lg-3 py-2 ps-lg-4 ps-2 pe-lg-6 pe-4 bg-secondary2 position-absolute top-0 start-0 parallelogram-path z-2">
-                            <span class="text-sm fw-medium text-n0">New</span>
-                        </div>
-                        <div class="product-thumb-wrapper position-relative">
-                            <button
-                                class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left"
-                                data-tooltip="Add to wishlist">
-                                <i class="ph ph-heart"></i>
-                            </button>
-                            <div class="product-thumb hover-cursor" data-hover-text="View Product">
-                                <a href="shop-details.html" class="product-thumb-link d-block">
-                                    <img class="w-100" src="assets/images/product-3.png" alt="product thumb">
-                                </a>
-                            </div>
-                        </div>
-                        <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
-                        <div class="product-info-wrapper">
-                            <div class="mb-xxl-7 mb-md-5 mb-3">
-                                <a href="shop-details.html">
-                                    <h4 class="text-n100 mb-2 hover-text-secondary2">
-                                        Urban Wanderer
-                                    </h4>
-                                </a>
-                                <span class="text-sm fw-normal text-n50">Enduro</span>
-                            </div>
-                            <div class="d-between flex-wrap gap-4">
-                                <div class="d-grid">
-                                    <span class="text-sm fw-normal text-n50 text-decoration-underline">$21,599.00
-                                        USD</span>
-                                    <span class="text-xl fw-semibold text-secondary2">$ 14,599.00 USD</span>
-                                </div>
-                                <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
-                                    TO CART </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-xs-6">
-                    <!-- product item -->
-                    <div
-                        class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
-                        <div class="product-thumb-wrapper position-relative">
-                            <button
-                                class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left"
-                                data-tooltip="Add to wishlist">
-                                <i class="ph ph-heart"></i>
-                            </button>
-                            <div class="product-thumb hover-cursor" data-hover-text="View Product">
-                                <a href="shop-details.html" class="product-thumb-link d-block">
-                                    <img class="w-100" src="assets/images/product-4.png" alt="product thumb">
-                                </a>
-                            </div>
-                        </div>
-                        <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
-                        <div class="product-info-wrapper">
-                            <div class="mb-xxl-7 mb-md-5 mb-3">
-                                <a href="shop-details.html">
-                                    <h4 class="text-n100 mb-2 hover-text-secondary2">
-                                        Electro Cruise
-                                    </h4>
-                                </a>
-                                <span class="text-sm fw-normal text-n50">Enduro</span>
-                            </div>
-                            <div class="d-between flex-wrap gap-4">
-                                <div class="d-grid">
-                                    <span class="text-sm fw-normal text-n50 text-decoration-underline">$21,599.00
-                                        USD</span>
-                                    <span class="text-xl fw-semibold text-secondary2">$ 14,599.00 USD</span>
-                                </div>
-                                <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
-                                    TO CART </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-xs-6">
-                    <!-- product item -->
-                    <div
-                        class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
-                        <div class="product-thumb-wrapper position-relative">
-                            <button
-                                class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left"
-                                data-tooltip="Add to wishlist">
-                                <i class="ph ph-heart"></i>
-                            </button>
-                            <div class="product-thumb hover-cursor" data-hover-text="View Product">
-                                <a href="shop-details.html" class="product-thumb-link d-block">
-                                    <img class="w-100" src="assets/images/product-5.png" alt="product thumb">
-                                </a>
-                            </div>
-                        </div>
-                        <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
-                        <div class="product-info-wrapper">
-                            <div class="mb-xxl-7 mb-md-5 mb-3">
-                                <a href="shop-details.html">
-                                    <h4 class="text-n100 mb-2 hover-text-secondary2">
-                                        Watt Wheels
-                                    </h4>
-                                </a>
-                                <span class="text-sm fw-normal text-n50">Enduro</span>
-                            </div>
-                            <div class="d-between flex-wrap gap-4">
-                                <div class="d-grid">
-                                    <span class="text-sm fw-normal text-n50 text-decoration-underline">$21,599.00
-                                        USD</span>
-                                    <span class="text-xl fw-semibold text-secondary2">$ 14,599.00 USD</span>
-                                </div>
-                                <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
-                                    TO CART </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-xs-6">
-                    <!-- product item -->
-                    <div
-                        class="product-card2 position-relative p-xl-10 p-lg-8 p-6 bg-n0 border border-n100-5 box-style box-n20 card-tilt animate-box">
-                        <div
-                            class="product-type py-lg-3 py-2 ps-lg-4 ps-2 pe-lg-6 pe-4 bg-secondary2 position-absolute top-0 start-0 parallelogram-path z-2">
-                            <span class="text-sm fw-medium text-n0">New</span>
-                        </div>
-                        <div class="product-thumb-wrapper position-relative">
-                            <button
-                                class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left"
-                                data-tooltip="Add to wishlist">
-                                <i class="ph ph-heart"></i>
-                            </button>
-                            <div class="product-thumb hover-cursor" data-hover-text="View Product">
-                                <a href="shop-details.html" class="product-thumb-link d-block">
-                                    <img class="w-100" src="assets/images/product-6.png" alt="product thumb">
-                                </a>
-                            </div>
-                        </div>
-                        <span class="d-block h-1px w-100 bg-n100-1 mb-lg-6 mb-4 mt-lg-10 mt-6"></span>
-                        <div class="product-info-wrapper">
-                            <div class="mb-xxl-7 mb-md-5 mb-3">
-                                <a href="shop-details.html">
-                                    <h4 class="text-n100 mb-2 hover-text-secondary2">
-                                        Electro Boost
-                                    </h4>
-                                </a>
-                                <span class="text-sm fw-normal text-n50">Enduro</span>
-                            </div>
-                            <div class="d-between flex-wrap gap-4">
-                                <div class="d-grid">
-                                    <span class="text-sm fw-normal text-n50 text-decoration-underline">$21,599.00
-                                        USD</span>
-                                    <span class="text-xl fw-semibold text-secondary2">$ 14,599.00 USD</span>
-                                </div>
-                                <a href="#" class="outline-btn text-n100 fw-medium box-style box-secondary2">ADD
-                                    TO CART </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <?php
+                    }
+                } else {
+                    echo '<div class="col-12 text-center py-5">';
+                    echo '<p class="text-n50">No related products found.</p>';
+                    echo '</div>';
+                }
+                ?>
             </div>
         </div>
     </section>

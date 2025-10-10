@@ -67,7 +67,7 @@ while ($item = mysqli_fetch_assoc($carts)) {
 
 mysqli_data_seek($carts, 0);
 
-$tax_rate = 0.18; // 18% GST
+$tax_rate = 0.18;
 $tax_amount = $subtotal * $tax_rate;
 $total_amount = $subtotal + $tax_amount;
 
@@ -216,7 +216,6 @@ function createOrder($data, $cart_items, $user_id, $conn)
 
         $tax_amount = ($subtotal - $discount) * 0.18;
         $total_amount = $subtotal - $discount + $tax_amount;
-
         // Insert order into DB (payment_method will be updated below)
         $order_query = "INSERT INTO orders (user_id, total_amount, status, payment_status, shipping_address, created_at) 
                         VALUES (?, ?, 'pending', 'pending', ?, NOW())";
@@ -292,90 +291,6 @@ function createOrder($data, $cart_items, $user_id, $conn)
     }
 }
 
-/*
-function createOrder($data, $cart_items, $user_id, $conn)
-{
-    if (empty($cart_items)) {
-        return ['status' => 'error', 'message' => 'Your cart is empty'];
-    }
-
-    // Get shipping address
-    $shipping_address = getShippingAddress($data, $user_id, $conn);
-    if ($shipping_address['status'] === 'error') {
-        return $shipping_address;
-    }
-
-    try {
-        $conn->begin_transaction();
-
-        // Calculate totals
-        $subtotal = 0;
-        foreach ($cart_items as $item) {
-            $item_price = $item['variant_id'] ?
-                ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
-            $subtotal += $item_price * $item['qty'];
-        }
-
-        $discount = 0;
-        $coupon_id = null;
-
-        // Apply coupon if provided
-        if (!empty($data['coupon_code'])) {
-            $coupon_result = applyCoupon($data['coupon_code'], $subtotal, $user_id, $conn);
-            if ($coupon_result['status'] === 'success') {
-                $discount = $coupon_result['discount'];
-                $coupon_id = $coupon_result['coupon_id'];
-            }
-        }
-
-        $tax_amount = ($subtotal - $discount) * 0.18;
-        $total_amount = $subtotal - $discount + $tax_amount;
-
-        // Create order
-        $order_query = "INSERT INTO orders (user_id, total_amount, status, payment_status, shipping_address, created_at) 
-                        VALUES (?, ?, 'pending', 'pending', ?, NOW())";
-
-        $shipping_address_json = json_encode($shipping_address['data']);
-        $stmt = $conn->prepare($order_query);
-        $stmt->bind_param("ids", $user_id, $total_amount, $shipping_address_json);
-        $stmt->execute();
-        $order_id = $conn->insert_id;
-
-        // Add order items
-        $item_query = "INSERT INTO order_items (order_id, product_id, variant_id, qty, price) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($item_query);
-
-        foreach ($cart_items as $item) {
-            $item_price = $item['variant_id'] ?
-                ($item['variant_discount'] > 0 ? $item['variant_discount'] : $item['variant_price']) : ($item['product_discount'] > 0 ? $item['product_discount'] : $item['product_price']);
-            $variant_id = $item['variant_id'] ?: null;
-
-            $stmt->bind_param("iiiid", $order_id, $item['product_id'], $variant_id, $item['qty'], $item_price);
-            $stmt->execute();
-        }
-
-        // Record coupon usage if applied
-        if ($coupon_id) {
-            $usage_query = "INSERT INTO coupon_usage (coupon_id, user_id, order_id, used_at) VALUES (?, ?, ?, NOW())";
-            $stmt = $conn->prepare($usage_query);
-            $stmt->bind_param("iii", $coupon_id, $user_id, $order_id);
-            $stmt->execute();
-        }
-
-        $conn->commit();
-
-        return [
-            'status' => 'success',
-            'order_id' => $order_id,
-            'amount' => $total_amount,
-            'message' => 'Order created successfully'
-        ];
-    } catch (Exception $e) {
-        $conn->rollback();
-        return ['status' => 'error', 'message' => 'Failed to create order: ' . $e->getMessage()];
-    }
-}
-*/
 function getShippingAddress($data, $user_id, $conn)
 {
     if (isset($data['selected_address']) && !empty($data['selected_address'])) {
@@ -1377,10 +1292,10 @@ function processPayment($data, $conn)
                                 code: couponCode,
                                 discount: response.discount
                             };
-
-                            updateOrderTotals();
+                            // alert('Coupon applied! You saved ₹' + response.discount);   
                             $('#couponMessage').html('<div class="text-success small">Coupon applied! You saved ₹' + response.discount + '</div>');
                             $('#applyCoupon').text('Applied').removeClass('btn-outline-dark').addClass('btn-success');
+                            updateOrderTotals();
                         } else {
                             $('#couponMessage').html('<div class="text-danger small">' + response.message + '</div>');
                             button.prop('disabled', false).text('Apply');
@@ -1391,18 +1306,46 @@ function processPayment($data, $conn)
                         button.prop('disabled', false).text('Apply');
                     });
             });
+            /*
+                        // Update order totals
+                        function updateOrderTotals() {
+                            const subtotal = parseFloat($('#finalTotal').data('subtotal'));
+                            const discount = appliedCoupon ? appliedCoupon.discount : 0;
+                            const taxableAmount = subtotal - discount;
+                            const tax = taxableAmount * 0.18;
+                            const total = subtotal - discount + tax;
+                            console.log("Subtotal:", subtotal, "Discount:", discount, "Tax:", tax, "Total:", total);
+                            if (discount > 0) {
+                                alert('Discount applied: ₹' + discount.toFixed(0));
+                                $('#discountRow').show();
+                                $('#discountAmount').text('-₹' + discount.toFixed(0));
+                            } else {
+                                $('#discountRow').hide();
+                            }
+
+                            $('#taxAmount').text('₹' + tax.toFixed(0));
+                            $('#finalTotal').text('₹' + total.toFixed(0));
+                        }*/
 
             // Update order totals
             function updateOrderTotals() {
-                const subtotal = parseFloat($('#finalTotal').data('subtotal'));
-                const discount = appliedCoupon ? appliedCoupon.discount : 0;
-                const taxableAmount = subtotal - discount;
-                const tax = taxableAmount * 0.18;
-                const total = subtotal - discount + tax;
+                const subtotal = parseFloat($('#finalTotal').data('subtotal')) || 0;
 
-                if (discount > 0) {
+                // Ensure discount is always numeric
+                const discountValue = appliedCoupon && appliedCoupon.discount ?
+                    parseFloat(appliedCoupon.discount) :
+                    0;
+
+                const taxableAmount = subtotal - discountValue;
+                const tax = taxableAmount * 0.18;
+                const total = subtotal - discountValue + tax;
+
+                console.log("Subtotal:", subtotal, "Discount:", discountValue, "Tax:", tax, "Total:", total);
+
+                if (discountValue > 0) {
+                    alert('Discount applied: ₹' + discountValue.toFixed(0));
                     $('#discountRow').show();
-                    $('#discountAmount').text('-₹' + discount.toFixed(0));
+                    $('#discountAmount').text('-₹' + discountValue.toFixed(0));
                 } else {
                     $('#discountRow').hide();
                 }
@@ -1410,6 +1353,7 @@ function processPayment($data, $conn)
                 $('#taxAmount').text('₹' + tax.toFixed(0));
                 $('#finalTotal').text('₹' + total.toFixed(0));
             }
+
 
             // Next button
             $('#nextBtn').click(function() {
@@ -1440,10 +1384,11 @@ function processPayment($data, $conn)
                 button.prop('disabled', true).html('<i class="ph ph-spinner me-2"></i>Processing...');
 
                 const paymentMethod = $('input[name="payment_method"]:checked').val() || 'cod';
-
+                const coupon_code = $('#couponCode').val() || '';
                 const formData = {
                     action: 'create_order',
                     payment_method: paymentMethod,
+                    coupon_code: coupon_code,
                     selected_address: $('input[name="selected_address"]:checked').val(),
                     full_name: $('#fullName').val(),
                     phone: $('#phone').val(),
@@ -1461,6 +1406,8 @@ function processPayment($data, $conn)
                             const orderId = response.order_id;
                             // If online, open Razorpay Checkout
                             if (paymentMethod === 'online' && response.razorpay_order_id) {
+                                console.log(response, orderId);
+
                                 openRazorpayCheckout(response, orderId);
                             } else {
                                 // COD — call processPayment to confirm order (as before)
@@ -1478,7 +1425,9 @@ function processPayment($data, $conn)
             });
 
             function openRazorpayCheckout(response, orderId) {
+                console.log(response.amount);
                 const options = {
+
                     key: response.razorpay_key, // public key
                     amount: Math.round(response.amount * 100), // rupees -> paise
                     currency: 'INR',

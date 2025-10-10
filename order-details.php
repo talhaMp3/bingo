@@ -12,13 +12,6 @@ $userName = $_SESSION['user_name'] ?? "Guest";
 $userEmail = $_SESSION['user_email'] ?? "";
 $userId = $_SESSION['user_id'];
 
-// Database connection (adjust these credentials as needed)
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "bingo_cycle";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
 
 // Check connection
 if ($conn->connect_error) {
@@ -75,7 +68,7 @@ $orderItems = [];
 while ($row = $itemsResult->fetch_assoc()) {
     $orderItems[] = $row;
 }
-
+/*
 // Calculate totals
 $subtotal = 0;
 foreach ($orderItems as $item) {
@@ -84,7 +77,43 @@ foreach ($orderItems as $item) {
 
 $shipping = 50.00; // You can make this dynamic based on your business logic
 $tax = $subtotal * 0.10; // 10% tax - adjust as needed
-$total = $subtotal + $shipping + $tax;
+$total = $subtotal + $shipping + $tax;*/
+
+// Calculate totals
+$subtotal = 0;
+foreach ($orderItems as $item) {
+    $subtotal += ($item['price'] * $item['qty']);
+}
+
+$shipping = 00; // flat rate shipping
+$tax = $subtotal * 0.18; // 18% tax
+$promoDiscount = 0.00;
+
+// Fetch promo discount (if any)
+$couponQuery = "
+    SELECT c.code, c.discount_type, c.amount
+    FROM coupon_usage cu
+    JOIN coupons c ON cu.coupon_id = c.id
+    WHERE cu.order_id = ?
+";
+$stmt = $conn->prepare($couponQuery);
+$stmt->bind_param("i", $orderId);
+$stmt->execute();
+$couponResult = $stmt->get_result();
+
+if ($couponResult->num_rows > 0) {
+    $coupon = $couponResult->fetch_assoc();
+    if ($coupon['discount_type'] === 'percentage') {
+        $promoDiscount = ($subtotal * ($coupon['amount'] / 100));
+    } else {
+        $promoDiscount = $coupon['amount'];
+    }
+}
+
+// Final total after discount
+$total = $subtotal + $shipping + $tax - $promoDiscount;
+
+
 
 // Format currency function
 function formatCurrency($amount)
@@ -428,11 +457,21 @@ $trackingSteps = getTrackingSteps($order['status'], $order['created_at'], $order
                                         <span class="text-n600">Tax:</span>
                                         <span class="text-n800"><?= formatCurrency($tax) ?></span>
                                     </div>
+
+                                    <?php if ($promoDiscount > 0): ?>
+                                        <div class="d-flex justify-content-between mb-3 text-danger fw-semibold">
+                                            <span>Promo Discount (<?= htmlspecialchars($coupon['code']) ?>):</span>
+                                            <span>-<?= formatCurrency($promoDiscount) ?></span>
+                                        </div>
+                                    <?php endif; ?>
+
                                     <hr class="my-3">
+
                                     <div class="d-flex justify-content-between mb-4">
                                         <span class="fw-semibold text-n800">Total:</span>
-                                        <span class="fw-semibold text-success h5 mb-0"><?= formatCurrency($order['total_amount']) ?></span>
+                                        <span class="fw-semibold text-success h5 mb-0"><?= formatCurrency($total) ?></span>
                                     </div>
+
                                     <?php if ($order['payment_method']): ?>
                                         <div class="payment-method p-3 radius-8 ">
                                             <p class="text-n600 mb-1">Payment Method:</p>
@@ -488,6 +527,7 @@ $trackingSteps = getTrackingSteps($order['status'], $order['created_at'], $order
                                 <?php endif; ?>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
