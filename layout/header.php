@@ -950,7 +950,7 @@ if (isset($_SESSION['user_id'])) {
                                     <!-- <a
                                         href="cart.html"
                                         class="d-block text-center text-n100 fw-medium py-lg-3 py-2 px-lg-6 px-4 border border-n100 bg-n0 hover-text-n0 hover-bg-n100">View Cart</a> -->
-                                    <acd 
+                                    <acd
                                         href="checkout.php"
                                         class="d-block text-center text-n0 fw-medium py-lg-3 py-2 px-lg-6 px-4 border-0 bg-secondary2 hover-text-n0 hover-bg-n100">Checkout</acd>
                                 </div>

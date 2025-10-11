@@ -19,9 +19,16 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
 
     switch ($action) {
         case 'add':
+
             if (isset($_POST['product_id'])) {
                 $product_id = intval($_POST['product_id']);
-                $variant_id = isset($_POST['variant_id']) ? intval($_POST['variant_id']) : null;
+
+                if (isset($_POST['variant_id'])) {
+                    $variant_id = intval($_POST['variant_id']);
+                } else {
+                    $variant_id = null;
+                }
+                // $variant_id =  ? intval($_POST['variant_id']) : null;
                 // return print_r($variant_id);
                 // exit;
                 // Check if already exists
@@ -39,7 +46,7 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
                     $insert_stmt->bind_param("iii", $user_id, $product_id, $variant_id);
 
                     if ($insert_stmt->execute()) {
-                        echo json_encode(['success' => true, 'message' => 'Product added to wishlist successfully']);
+                        echo json_encode(['success' => true, 'message' => $variant_id]);
                     } else {
                         echo json_encode(['success' => false, 'message' => 'Error adding to wishlist']);
                     }

@@ -990,10 +990,11 @@ include_once './layout/header.php';
 
                         // Check if product is in wishlist
                         if ($user_id) {
+                            // echo "SELECT id FROM wishlist WHERE user_id = $user_id AND product_id = {$related['id']} AND variant_id  0";
                             $wishlist_check = mysqli_query($conn, "SELECT id FROM wishlist WHERE user_id = $user_id AND product_id = {$related['id']} AND variant_id IS NULL");
                             $in_wishlist = mysqli_num_rows($wishlist_check) > 0;
                         } else {
-                            $in_wishlist = false;
+                            $in_wishlist = false; 
                         }
                 ?>
                         <div class="col-lg-4 col-xs-6">
@@ -1004,8 +1005,8 @@ include_once './layout/header.php';
                                         <span class="text-sm fw-medium text-n0">New</span>
                                     </div>
                                 <?php } ?>
-
                                 <div class="product-thumb-wrapper position-relative">
+
                                     <button class="single-wishlist-btn text-secondary2 text-xl icon-52px bg-n0 position-absolute top-0 right-0 z-3 tooltip-btn tooltip-left <?= $in_wishlist ? 'removeFromWishlist' : 'addToWishlist' ?>"
                                         data-tooltip="<?= $in_wishlist ? 'Remove from wishlist' : 'Add to wishlist' ?>"
                                         data-product="<?= $related['id'] ?>"

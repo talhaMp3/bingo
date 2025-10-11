@@ -142,94 +142,123 @@ $best_product_result = mysqli_query($conn, $best_product_query);
           <div class="swiper hero-swiper">
             <div class="swiper-wrapper">
 
-              <?php while ($row = $hero_slides_res->fetch_assoc()): ?>
+              <?php
+              // Check if result set exists and has rows
+              if ($hero_slides_res && $hero_slides_res->num_rows > 0):
+                while ($row = $hero_slides_res->fetch_assoc()):
+              ?>
+                  <div class="swiper-slide">
+                    <div class="hero-swiper-wrapper py-3xl-12 py-lg-8 py-6 px-4xl-20 px-3xl-10 px-lg-8 px-sm-6 p-4 bg-secondary">
+
+                      <!-- Title -->
+                      <?php if (!empty($row['title'])): ?>
+                        <span class="text-animation-word display-two text-n100 mb-1 text-center d-block">
+                          <?= htmlspecialchars($row['title']) ?>
+                        </span>
+                      <?php endif; ?>
+
+                      <!-- Subtitle -->
+                      <?php if (!empty($row['subtitle'])): ?>
+                        <span class="text-animation-word d-block text-n100 mb-lg-5 mb-3 text-center">
+                          <?= htmlspecialchars($row['subtitle']) ?>
+                          <?php if (!empty($row['price_text'])): ?>
+                            <span class="text-secondary2"><?= htmlspecialchars($row['price_text']) ?></span>
+                          <?php endif; ?>
+                        </span>
+                      <?php endif; ?>
+
+                      <!-- Buttons - Outside animation wrapper -->
+                      <div class="d-center gap-lg-5 gap-3">
+                        <?php if (!empty($row['btn1_text']) && !empty($row['btn1_link'])): ?>
+                          <a href="<?= htmlspecialchars($row['btn1_link']) ?>" class="btn-secondary">
+                            <?= htmlspecialchars($row['btn1_text']) ?>
+                            <span class="icon">
+                              <i class="ph ph-arrow-up-right"></i>
+                              <i class="ph ph-arrow-up-right"></i>
+                            </span>
+                          </a>
+                        <?php endif; ?>
+
+                        <?php if (!empty($row['btn2_text']) && !empty($row['btn2_link'])): ?>
+                          <a href="<?= htmlspecialchars($row['btn2_link']) ?>" class="text-decoration-underline fw-medium hover-text-secondary2">
+                            <?= htmlspecialchars($row['btn2_text']) ?>
+                          </a>
+                        <?php endif; ?>
+                      </div>
+
+                      <!-- Image Section -->
+                      <?php if (!empty($row['image'])): ?>
+                        <div class="pt-4xl-18 pt-10">
+                          <div class="hero-swiper-item position-relative z-1 px-3xl-8">
+                            <?php if (!empty($row['badge_text'])): ?>
+                              <span class="bg-text text-uppercase font-archivo top-30 left-50">
+                                <?= htmlspecialchars($row['badge_text']) ?>
+                              </span>
+                            <?php endif; ?>
+                            <img class="w-100"
+                              src="./assets/uploads/hero_slide/<?= htmlspecialchars($row['image']) ?>"
+                              alt="<?= !empty($row['alt_text']) ? htmlspecialchars($row['alt_text']) : 'hero swiper' ?>">
+                          </div>
+                        </div>
+                      <?php endif; ?>
+
+                    </div>
+                  </div>
+                <?php
+                endwhile;
+              else:
+                ?>
+                <!-- Fallback if no slides -->
                 <div class="swiper-slide">
                   <div class="hero-swiper-wrapper py-3xl-12 py-lg-8 py-6 px-4xl-20 px-3xl-10 px-lg-8 px-sm-6 p-4 bg-secondary">
-
-                    <!-- Title -->
-                    <span class="text-animation-word display-two text-n100 mb-1 text-center">
-                      <?php foreach (explode(" ", $row['title']) as $word): ?>
-                        <div class="word"><?= htmlspecialchars($word) ?></div>
-                      <?php endforeach; ?>
-                    </span>
-
-                    <!-- Subtitle -->
-                    <span class="text-animation-word d-block text-n100 mb-lg-5 mb-3 text-center">
-                      <?php foreach (explode(" ", $row['subtitle']) as $word): ?>
-                        <div class="word"><?= htmlspecialchars($word) ?></div>
-                      <?php endforeach; ?>
-                      <?php if (!empty($row['price_text'])): ?>
-                        <span class="text-secondary2">
-                          <div class="word"><?= htmlspecialchars($row['price_text']) ?></div>
-                        </span>
-                      <?php endif; ?>
-                    </span>
-
-                    <!-- Buttons -->
-                    <div class="d-center gap-lg-5 gap-3">
-                      <?php if (!empty($row['btn1_text'])): ?>
-                        <a href="<?= htmlspecialchars($row['btn1_link']) ?>" class="btn-secondary">
-                          <?= htmlspecialchars($row['btn1_text']) ?>
-                          <span class="icon">
-                            <i class="ph ph-arrow-up-right"></i>
-                            <i class="ph ph-arrow-up-right"></i>
-                          </span>
-                        </a>
-                      <?php endif; ?>
-
-                      <?php if (!empty($row['btn2_text'])): ?>
-                        <a href="<?= htmlspecialchars($row['btn2_link']) ?>" class="text-decoration-underline fw-medium hover-text-secondary2">
-                          <?= htmlspecialchars($row['btn2_text']) ?>
-                        </a>
-                      <?php endif; ?>
-                    </div>
-
-                    <!-- Image -->
-                    <div class="hero-swiper-item position-relative z-1 mt-5">
-                      <?php if (!empty($row['badge_text'])): ?>
-                        <span class="bg-text text-uppercase font-archivo top-30 left-50">
-                          <?= htmlspecialchars($row['badge_text']) ?>
-                        </span>
-                      <?php endif; ?>
-                      <img class="w-100" src="./assets/uploads/hero_slide/<?= htmlspecialchars($row['image']) ?>" alt="hero swiper">
-                    </div>
-
+                    <p class="text-center text-n100">No hero slides available</p>
                   </div>
                 </div>
-              <?php endwhile; ?>
+              <?php endif; ?>
 
             </div>
 
             <!-- Navigation buttons -->
-            <div class="d-flex align-items-center justify-content-center gap-3 mt-n15 position-relative z-3">
-              <button class="hero-swiper-prev icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2">
+            <!-- <div class="d-flex align-items-center justify-content-center gap-3 mt-n15 position-relative z-3">
+              <button class="hero-swiper-prev icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2" aria-label="Previous slide">
                 <i class="ph ph-caret-left"></i>
               </button>
-              <button class="hero-swiper-next icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2">
+              <button class="hero-swiper-next icon-48px hover-text-n0 border border-n100-2 box-style box-secondary2" aria-label="Next slide">
                 <i class="ph ph-caret-right"></i>
               </button>
-            </div>
+            </div> -->
+            
           </div>
         </div>
-
-
-
 
         <div class="col-lg-5">
           <!-- hero banner -->
           <div class="d-lg-grid d-sm-flex d-grid gap-6">
-            <?php while ($banner = $result->fetch_assoc()): ?>
-              <div class="animate-box">
-                <a href="<?php echo htmlspecialchars($banner['link']); ?>"
-                  class="hero-banner-item d-block hover-border-secondary2 position-relative z-1 overflow-hidden">
-                  <div class="hero-banner-wrapper">
-                    <img class="w-100 transition"
-                      src="./assets/uploads/banners/<?php echo htmlspecialchars($banner['image']); ?>"
-                      alt="<?php echo htmlspecialchars($banner['alt_text']); ?>" />
+            <?php
+            // Check if result set exists and has rows
+            if ($result && $result->num_rows > 0):
+              while ($banner = $result->fetch_assoc()):
+                // Validate required fields
+                if (!empty($banner['image']) && !empty($banner['link'])):
+            ?>
+                  <div class="animate-box">
+                    <a href="<?= htmlspecialchars($banner['link']) ?>"
+                      class="hero-banner-item d-block hover-border-secondary2 position-relative z-1 overflow-hidden">
+                      <div class="hero-banner-wrapper">
+                        <img class="w-100 transition"
+                          src="./assets/uploads/banners/<?= htmlspecialchars($banner['image']) ?>"
+                          alt="<?= !empty($banner['alt_text']) ? htmlspecialchars($banner['alt_text']) : 'Banner image' ?>" />
+                      </div>
+                    </a>
                   </div>
-                </a>
-              </div>
-            <?php endwhile; ?>
+              <?php
+                endif;
+              endwhile;
+            else:
+              ?>
+              <!-- Fallback if no banners -->
+              <p class="text-center text-muted">No banners available</p>
+            <?php endif; ?>
           </div>
         </div>
       </div>
