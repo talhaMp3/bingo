@@ -1,4 +1,4 @@
 <?php
 // razorpay_config.php
-define('RAZORPAY_KEY_ID', 'rzp_test_RL4LRNMHNw8vbx');
-define('RAZORPAY_KEY_SECRET', 'RooEXpBmC2k1W9rT3GctzROS');
+define('RAZORPAY_KEY_ID', 'rzp_live_ROVtQJ1i7Edlq1');
+define('RAZORPAY_KEY_SECRET', 'JM7pcJHsPbdNRPIAVc4EYM0F');
